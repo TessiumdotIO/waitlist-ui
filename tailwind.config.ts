@@ -69,8 +69,9 @@ export default {
 				}
 			},
 			fontFamily: {
-				sans: ['SF Pro Display', 'system-ui', 'sans-serif'],
-				serif: ['SF Pro Text', 'Georgia', 'serif'],
+				sans: ['Aeonik', 'system-ui', 'sans-serif'],
+				serif: ['Aeonik', 'Georgia', 'serif'],
+				display: ['Neue Machina', 'system-ui', 'sans-serif'],
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

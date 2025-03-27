@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { Zap } from 'lucide-react';
 
 const NavBar: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -26,7 +27,10 @@ const NavBar: React.FC = () => {
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-primary font-bold text-2xl">Learniverse</span>
+          <div className="flex items-center text-primary">
+            <Zap className="h-6 w-6 mr-1" />
+            <span className="text-primary font-bold text-2xl font-display">Learniverse</span>
+          </div>
         </div>
         
         {/* Desktop navigation */}

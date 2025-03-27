@@ -5,71 +5,71 @@
 
 @layer base {
   :root {
-    --background: 240 19% 10%;
+    --background: 260 25% 10%;
     --foreground: 0 0% 99%;
 
     --card: 0 0% 100%;
-    --card-foreground: 240 19% 10%;
+    --card-foreground: 260 25% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 240 19% 10%;
+    --popover-foreground: 260 25% 10%;
 
-    --primary: 261 81% 38%;
+    --primary: 257 70% 37%;
     --primary-foreground: 0 0% 99%;
 
     --secondary: 355 100% 69%;
     --secondary-foreground: 0 0% 99%;
 
-    --tertiary: 40 100% 56%;
-    --tertiary-foreground: 240 19% 10%;
+    --tertiary: 45 100% 56%;
+    --tertiary-foreground: 260 25% 10%;
 
-    --muted: 240 19% 20%;
+    --muted: 260 25% 20%;
     --muted-foreground: 0 0% 85%;
 
-    --accent: 275 91% 54%;
+    --accent: 284 91% 54%;
     --accent-foreground: 0 0% 99%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 99%;
 
-    --border: 240 19% 20%;
-    --input: 240 19% 20%;
-    --ring: 261 81% 38%;
+    --border: 260 25% 20%;
+    --input: 260 25% 20%;
+    --ring: 257 70% 37%;
 
     --radius: 0.75rem;
   }
 
   .dark {
-    --background: 240 19% 10%;
+    --background: 260 25% 10%;
     --foreground: 0 0% 99%;
 
-    --card: 240 19% 10%;
+    --card: 260 25% 10%;
     --card-foreground: 0 0% 99%;
 
-    --popover: 240 19% 10%;
+    --popover: 260 25% 10%;
     --popover-foreground: 0 0% 99%;
 
-    --primary: 261 81% 38%;
+    --primary: 257 70% 37%;
     --primary-foreground: 0 0% 99%;
 
     --secondary: 355 100% 69%;
     --secondary-foreground: 0 0% 99%;
 
-    --tertiary: 40 100% 56%;
-    --tertiary-foreground: 240 19% 10%;
+    --tertiary: 45 100% 56%;
+    --tertiary-foreground: 260 25% 10%;
 
-    --muted: 240 19% 20%;
+    --muted: 260 25% 20%;
     --muted-foreground: 0 0% 85%;
 
-    --accent: 275 91% 54%;
+    --accent: 284 91% 54%;
     --accent-foreground: 0 0% 99%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 99%;
 
-    --border: 240 19% 20%;
-    --input: 240 19% 20%;
-    --ring: 261 81% 38%;
+    --border: 260 25% 20%;
+    --input: 260 25% 20%;
+    --ring: 257 70% 37%;
   }
 }
 
@@ -102,19 +102,19 @@
   }
   
   .heading-xl {
-    @apply text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-balance;
+    @apply text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-balance font-display;
   }
   
   .heading-lg {
-    @apply text-3xl md:text-4xl font-bold tracking-tight text-balance;
+    @apply text-3xl md:text-4xl font-bold tracking-tight text-balance font-display;
   }
   
   .heading-md {
-    @apply text-2xl md:text-3xl font-bold tracking-tight text-balance;
+    @apply text-2xl md:text-3xl font-bold tracking-tight text-balance font-display;
   }
   
   .heading-sm {
-    @apply text-xl md:text-2xl font-bold tracking-tight text-balance;
+    @apply text-xl md:text-2xl font-bold tracking-tight text-balance font-display;
   }
 
   .subtle-underline {

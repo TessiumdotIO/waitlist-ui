@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { cn } from '@/lib/utils';
+import { Zap } from 'lucide-react';
 
 const Footer: React.FC = () => {
   return (
@@ -9,7 +10,10 @@ const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           <div className="md:col-span-2">
             <div className="flex items-center gap-2 mb-4">
-              <span className="text-primary font-bold text-2xl">Learniverse</span>
+              <div className="flex items-center text-primary">
+                <Zap className="h-5 w-5 mr-1" />
+                <span className="text-primary font-bold text-2xl font-display">Learniverse</span>
+              </div>
             </div>
             
             <p className="text-muted-foreground max-w-md mb-6">
@@ -32,7 +36,7 @@ const Footer: React.FC = () => {
           </div>
           
           <div>
-            <h3 className="font-semibold text-lg mb-4">Platform</h3>
+            <h3 className="font-semibold text-lg mb-4 font-display">Platform</h3>
             <ul className="space-y-3">
               {["Features", "How it Works", "Pricing", "Roadmap"].map((item, i) => (
                 <li key={i}>
@@ -48,7 +52,7 @@ const Footer: React.FC = () => {
           </div>
           
           <div>
-            <h3 className="font-semibold text-lg mb-4">Company</h3>
+            <h3 className="font-semibold text-lg mb-4 font-display">Company</h3>
             <ul className="space-y-3">
               {["About", "Blog", "Careers", "Contact", "Press"].map((item, i) => (
                 <li key={i}>
