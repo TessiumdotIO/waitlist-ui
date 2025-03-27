@@ -1,13 +1,6 @@
 import React from "react";
 import { cn } from "@/lib/utils";
-import {
-	Zap,
-	Facebook,
-	Instagram,
-	Twitter,
-	Linkedin,
-	Youtube,
-} from "lucide-react";
+import { Facebook, Instagram, Twitter, Linkedin, Youtube } from "lucide-react";
 
 const Footer: React.FC = () => {
 	return (
@@ -17,7 +10,11 @@ const Footer: React.FC = () => {
 					<div className="md:col-span-2">
 						<div className="flex items-center gap-2 mb-4">
 							<div className="flex items-center text-primary">
-								<Zap className="h-5 w-5 mr-1" />
+								<img
+									src="/logo.PNG"
+									className="h-5 w-5 m-1"
+									alt="LOGO"
+								/>
 								<span className="text-primary font-bold text-2xl font-display">
 									Tessium
 								</span>
