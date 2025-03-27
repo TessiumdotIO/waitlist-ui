@@ -1,145 +1,172 @@
-
-import React, { useState } from 'react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { FadeIn } from './Animations';
-import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import React, { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { FadeIn } from "./Animations";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 const WaitlistForm: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [name, setName] = useState('');
-  const [experience, setExperience] = useState('beginner');
-  const [isLoading, setIsLoading] = useState(false);
-  
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      toast.success("You've been added to our waitlist!", {
-        description: "We'll notify you as soon as we launch.",
-      });
-      setEmail('');
-      setName('');
-      setIsLoading(false);
-    }, 1500);
-  };
-  
-  return (
-    <section id="waitlist" className="py-24 px-6 bg-muted/30">
-      <div className="max-w-7xl mx-auto">
-        <div className="grid md:grid-cols-2 gap-12 items-center">
-          <FadeIn direction="left">
-            <div>
-              <span className="inline-block px-4 py-2 rounded-full bg-primary/10 text-primary font-medium text-sm mb-6">
-                Exclusive Access
-              </span>
-              <h2 className="heading-lg mb-6">Join the Waitlist Today</h2>
-              <p className="text-lg text-muted-foreground mb-6">
-                Be the first to experience Learniverse and receive exclusive early-access benefits:
-              </p>
-              
-              <ul className="space-y-4 mb-8">
-                {[
-                  "500 LRNT tokens bonus upon full launch",
-                  "Priority access to premium courses",
-                  "Exclusive NFT for founding members",
-                  "Influence platform development with your feedback"
-                ].map((benefit, index) => (
-                  <li key={index} className="flex items-start">
-                    <span className="h-6 w-6 rounded-full bg-primary/20 text-primary flex items-center justify-center mr-3 mt-0.5">
-                      ✓
-                    </span>
-                    <span>{benefit}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </FadeIn>
-          
-          <FadeIn direction="right">
-            <div className="bg-card rounded-2xl border border-border p-6 md:p-8 shadow-lg">
-              <div className="mb-8">
-                <h3 className="text-2xl font-semibold mb-2">Reserve Your Spot</h3>
-                <p className="text-muted-foreground">
-                  Fill in your details below to join our exclusive waitlist.
-                </p>
-              </div>
-              
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-2">
-                  <label htmlFor="name" className="text-sm font-medium">
-                    Full Name
-                  </label>
-                  <Input
-                    id="name"
-                    type="text"
-                    placeholder="Enter your name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                    className="bg-background"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label htmlFor="email" className="text-sm font-medium">
-                    Email Address
-                  </label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="bg-background"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Web3 Experience Level
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {['beginner', 'intermediate', 'advanced'].map((level) => (
-                      <button
-                        key={level}
-                        type="button"
-                        className={cn(
-                          "py-2 px-3 rounded-md border text-sm capitalize transition-all",
-                          experience === level
-                            ? "border-primary bg-primary/10 text-primary"
-                            : "border-border hover:border-primary/50"
-                        )}
-                        onClick={() => setExperience(level)}
-                      >
-                        {level}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                
-                <Button 
-                  type="submit" 
-                  className="w-full py-6 text-lg font-medium"
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Submitting..." : "Join Waitlist"}
-                </Button>
-                
-                <p className="text-xs text-muted-foreground text-center pt-4">
-                  By joining, you agree to our Terms of Service and Privacy Policy.
-                </p>
-              </form>
-            </div>
-          </FadeIn>
-        </div>
-      </div>
-    </section>
-  );
+	const [email, setEmail] = useState("");
+	const [name, setName] = useState("");
+	const [experience, setExperience] = useState("beginner");
+	const [isLoading, setIsLoading] = useState(false);
+
+	const handleSubmit = (e: React.FormEvent) => {
+		e.preventDefault();
+		setIsLoading(true);
+
+		// Simulate API call
+		setTimeout(() => {
+			toast.success("You've been added to our waitlist!", {
+				description: "We'll notify you as soon as we launch.",
+			});
+			setEmail("");
+			setName("");
+			setIsLoading(false);
+		}, 1500);
+	};
+
+	return (
+		<section id="waitlist" className="py-24 px-6 bg-muted/30">
+			<div className="max-w-7xl mx-auto">
+				<div className="grid md:grid-cols-2 gap-12 items-center">
+					<FadeIn direction="left">
+						<div>
+							<span className="inline-block px-4 py-2 rounded-full bg-primary/10 text-primary font-medium text-sm mb-6">
+								Exclusive Access
+							</span>
+							<h2 className="heading-lg mb-6">
+								Join the Waitlist Today
+							</h2>
+							<p className="text-lg text-muted-foreground mb-6">
+								Be the first to experience Tessium and receive
+								exclusive early-access benefits:
+							</p>
+
+							<ul className="space-y-4 mb-8">
+								{[
+									"500 LRNT tokens bonus upon full launch",
+									"Priority access to premium courses",
+									"Exclusive NFT for founding members",
+									"Influence platform development with your feedback",
+								].map((benefit, index) => (
+									<li
+										key={index}
+										className="flex items-start"
+									>
+										<span className="h-6 w-6 rounded-full bg-primary/20 text-primary flex items-center justify-center mr-3 mt-0.5">
+											✓
+										</span>
+										<span>{benefit}</span>
+									</li>
+								))}
+							</ul>
+						</div>
+					</FadeIn>
+
+					<FadeIn direction="right">
+						<div className="bg-primary/5 rounded-2xl border border-border p-6 md:p-8 shadow-lg">
+							<div className="mb-8">
+								<h3 className="text-2xl font-semibold mb-2">
+									Reserve Your Spot
+								</h3>
+								<p className="text-muted-foreground">
+									Fill in your details below to join our
+									exclusive waitlist.
+								</p>
+							</div>
+
+							<form onSubmit={handleSubmit} className="space-y-6">
+								<div className="space-y-2">
+									<label
+										htmlFor="name"
+										className="text-sm font-medium"
+									>
+										Full Name
+									</label>
+									<Input
+										id="name"
+										type="text"
+										placeholder="Enter your name"
+										value={name}
+										onChange={(e) =>
+											setName(e.target.value)
+										}
+										required
+										className="bg-background"
+									/>
+								</div>
+
+								<div className="space-y-2">
+									<label
+										htmlFor="email"
+										className="text-sm font-medium"
+									>
+										Email Address
+									</label>
+									<Input
+										id="email"
+										type="email"
+										placeholder="Enter your email"
+										value={email}
+										onChange={(e) =>
+											setEmail(e.target.value)
+										}
+										required
+										className="bg-background"
+									/>
+								</div>
+
+								<div className="space-y-2">
+									<label className="text-sm font-medium">
+										Web3 Experience Level
+									</label>
+									<div className="grid grid-cols-3 gap-2">
+										{[
+											"beginner",
+											"intermediate",
+											"advanced",
+										].map((level) => (
+											<button
+												key={level}
+												type="button"
+												className={cn(
+													"py-2 px-3 rounded-md border text-sm capitalize transition-all",
+													experience === level
+														? "border-primary bg-primary/10 text-primary"
+														: "border-border hover:border-primary/50"
+												)}
+												onClick={() =>
+													setExperience(level)
+												}
+											>
+												{level}
+											</button>
+										))}
+									</div>
+								</div>
+
+								<Button
+									type="submit"
+									className="w-full py-6 text-lg font-medium"
+									disabled={isLoading}
+								>
+									{isLoading
+										? "Submitting..."
+										: "Join Waitlist"}
+								</Button>
+
+								<p className="text-xs text-muted-foreground text-center pt-4">
+									By joining, you agree to our Terms of
+									Service and Privacy Policy.
+								</p>
+							</form>
+						</div>
+					</FadeIn>
+				</div>
+			</div>
+		</section>
+	);
 };
 
 export default WaitlistForm;
