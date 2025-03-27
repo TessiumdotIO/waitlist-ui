@@ -1,43 +1,114 @@
-import React, { useState } from "react";
+/* eslint-disable @typescript-eslint/no-unused-expressions */
+import React, { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FadeIn } from "./Animations";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+	process.env.NEXT_PUBLIC_SUPABASE_URL!,
+	process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 const WaitlistForm: React.FC = () => {
 	const [email, setEmail] = useState("");
 	const [name, setName] = useState("");
 	const [experience, setExperience] = useState("beginner");
 	const [isLoading, setIsLoading] = useState(false);
+	const [locationData, setLocationData] = useState({
+		ip: "",
+		country: "",
+		device: "",
+	});
+
+	useEffect(() => {
+		async function fetchLocation() {
+			try {
+				const res = await fetch("https://ipapi.co/json/");
+				const data = await res.json();
+				setLocationData({
+					ip: data.ip,
+					country: data.country_name,
+					device: navigator.userAgent,
+				});
+			} catch (error) {
+				console.error("Failed to fetch location", error);
+			}
+		}
+		fetchLocation();
+	}, []);
+
+	// const handleSubmit = async (e: React.FormEvent) => {
+	// 	e.preventDefault();
+	// 	setIsLoading(true);
+
+	// 	try {
+	// 		const response = await fetch("/api/submit-waitlist", {
+	// 			method: "POST",
+	// 			headers: {
+	// 				"Content-Type": "application/json",
+	// 			},
+	// 			body: JSON.stringify({
+	// 				name,
+	// 				email,
+	// 				experience,
+	// 			}),
+	// 		});
+
+	// 		if (!response.ok) {
+	// 			throw new Error("Failed to submit");
+	// 		}
+
+	// 		toast.success("You've been added to our waitlist!", {
+	// 			description: "We'll notify you as soon as we launch.",
+	// 		});
+	// 		setEmail("");
+	// 		setName("");
+	// 		setExperience("beginner");
+	// 	} catch (error) {
+	// 		toast.error("Something went wrong", {
+	// 			description: "Please try again later.",
+	// 		});
+	// 		console.error(error);
+	// 	} finally {
+	// 		setIsLoading(false);
+	// 	}
+
+	// 	// Simulate API call
+	// 	setTimeout(() => {
+	// 		toast.success("You've been added to our waitlist!", {
+	// 			description: "We'll notify you as soon as we launch.",
+	// 		});
+	// 		setEmail("");
+	// 		setName("");
+	// 		setIsLoading(false);
+	// 	}, 1500);
+	// };
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setIsLoading(true);
 
 		try {
-			const response = await fetch("/api/submit-waitlist", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
+			const { data, error } = await supabase.from("waitlist").insert([
+				{
 					name,
 					email,
 					experience,
-				}),
-			});
+					ip_address: locationData.ip,
+					country: locationData.country,
+					device_info: locationData.device,
+				},
+			]);
 
-			if (!response.ok) {
-				throw new Error("Failed to submit");
-			}
+			if (error) throw error;
 
 			toast.success("You've been added to our waitlist!", {
 				description: "We'll notify you as soon as we launch.",
 			});
-			setEmail("");
-			setName("");
-			setExperience("beginner");
+			setEmail(""), setName(""), setExperience("beginner");
 		} catch (error) {
 			toast.error("Something went wrong", {
 				description: "Please try again later.",
@@ -46,16 +117,6 @@ const WaitlistForm: React.FC = () => {
 		} finally {
 			setIsLoading(false);
 		}
-
-		// Simulate API call
-		setTimeout(() => {
-			toast.success("You've been added to our waitlist!", {
-				description: "We'll notify you as soon as we launch.",
-			});
-			setEmail("");
-			setName("");
-			setIsLoading(false);
-		}, 1500);
 	};
 
 	return (
