@@ -163,7 +163,7 @@ const WaitlistForm: React.FC = () => {
 
 							<ul className="space-y-4 mb-8">
 								{[
-									"500 LRNT tokens bonus upon full launch",
+									"500 TSIM tokens bonus upon full launch",
 									"Priority access to premium courses",
 									"Exclusive NFT for founding members",
 									"Influence platform development with your feedback",

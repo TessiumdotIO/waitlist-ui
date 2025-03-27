@@ -175,7 +175,7 @@ const HowItWorks: React.FC = () => {
 
 									<div className="h-16 rounded-lg bg-primary/10 mt-6 flex items-center justify-center">
 										<div className="font-medium text-primary">
-											Up to 500 LRNT tokens to earn
+											Up to 500 TSIM tokens to earn
 										</div>
 									</div>
 								</div>

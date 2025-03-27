@@ -121,7 +121,7 @@ const Hero: React.FC = () => {
 								<div className="absolute -bottom-4 -right-4 sm:bottom-12 sm:right-0 w-40 h-40 rounded-lg rotate-6 neo-blur flex items-center justify-center">
 									<div className="text-center p-4">
 										<div className="font-bold text-xl">
-											250 LRNT
+											250 TSIM
 										</div>
 										<div className="text-xs text-muted-foreground mt-1">
 											Tokens Earned
