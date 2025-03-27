@@ -19,7 +19,7 @@ const Hero: React.FC = () => {
 		}
 	};
 
-	const [userCount, setUserCount] = useState<number>(0);
+	const [userCount, setUserCount] = useState<number>(1200);
 
 	const supabase = createClient(
 		import.meta.env.VITE_SUPABASE_URL!,
@@ -27,11 +27,30 @@ const Hero: React.FC = () => {
 	);
 	// Fetch user count from the database
 	useEffect(() => {
+		// const fetchUserCount = async () => {
+		// 	try {
+		// 		const { count, error } = await supabase
+		// 			.from("waitlist")
+		// 			.select("*", { count: "exact", head: true }); // Fetch count of records
+
+		// 		if (error) {
+		// 			console.error("Error fetching user count:", error);
+		// 		} else {
+		// 			setUserCount(count); // Set the user count in state
+		// 		}
+		// 	} catch (error) {
+		// 		console.error("Error fetching user count:", error);
+		// 	}
+		// };
+
 		const fetchUserCount = async () => {
 			try {
-				const { count, error } = await supabase
+				const { data, count, error } = await supabase
 					.from("waitlist")
-					.select("*", { count: "exact", head: true }); // Fetch count of records
+					.select("*", { count: "exact" }); // Fetch count of records
+
+				console.log("Data:", data); // Log the data to see the records
+				console.log("Count:", count); // Log the count
 
 				if (error) {
 					console.error("Error fetching user count:", error);
