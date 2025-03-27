@@ -11,9 +11,41 @@ const WaitlistForm: React.FC = () => {
 	const [experience, setExperience] = useState("beginner");
 	const [isLoading, setIsLoading] = useState(false);
 
-	const handleSubmit = (e: React.FormEvent) => {
+	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setIsLoading(true);
+
+		try {
+			const response = await fetch("/api/submit-waitlist", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					name,
+					email,
+					experience,
+				}),
+			});
+
+			if (!response.ok) {
+				throw new Error("Failed to submit");
+			}
+
+			toast.success("You've been added to our waitlist!", {
+				description: "We'll notify you as soon as we launch.",
+			});
+			setEmail("");
+			setName("");
+			setExperience("beginner");
+		} catch (error) {
+			toast.error("Something went wrong", {
+				description: "Please try again later.",
+			});
+			console.error(error);
+		} finally {
+			setIsLoading(false);
+		}
 
 		// Simulate API call
 		setTimeout(() => {
