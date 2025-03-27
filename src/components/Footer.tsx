@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { Zap } from 'lucide-react';
+import { Zap, Facebook, Instagram, Twitter, Linkedin, Youtube } from 'lucide-react';
 
 const Footer: React.FC = () => {
   return (
@@ -22,16 +22,34 @@ const Footer: React.FC = () => {
             </p>
             
             <div className="flex space-x-4">
-              {["#", "#", "#", "#"].map((link, i) => (
-                <a 
-                  key={i} 
-                  href={link} 
-                  className="w-10 h-10 rounded-full bg-muted flex items-center justify-center hover:bg-primary/10 transition-colors"
-                  aria-label={`Social media link ${i + 1}`}
-                >
-                  <div className="w-5 h-5 bg-foreground/40 rounded-sm" />
-                </a>
-              ))}
+              <a 
+                href="#" 
+                className="w-10 h-10 rounded-full bg-muted flex items-center justify-center hover:bg-primary/10 transition-colors"
+                aria-label="Facebook"
+              >
+                <Facebook className="w-5 h-5 text-foreground/80" />
+              </a>
+              <a 
+                href="#" 
+                className="w-10 h-10 rounded-full bg-muted flex items-center justify-center hover:bg-primary/10 transition-colors"
+                aria-label="Instagram"
+              >
+                <Instagram className="w-5 h-5 text-foreground/80" />
+              </a>
+              <a 
+                href="#" 
+                className="w-10 h-10 rounded-full bg-muted flex items-center justify-center hover:bg-primary/10 transition-colors"
+                aria-label="Twitter"
+              >
+                <Twitter className="w-5 h-5 text-foreground/80" />
+              </a>
+              <a 
+                href="#" 
+                className="w-10 h-10 rounded-full bg-muted flex items-center justify-center hover:bg-primary/10 transition-colors"
+                aria-label="LinkedIn"
+              >
+                <Linkedin className="w-5 h-5 text-foreground/80" />
+              </a>
             </div>
           </div>
           
