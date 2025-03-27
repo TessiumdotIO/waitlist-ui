@@ -40,8 +40,8 @@ const Index = () => {
 			<NavBar />
 			<main>
 				<Hero />
-				<Features />
-				<HowItWorks />
+				{/* <Features /> */}
+				{/* <HowItWorks /> */}
 				<WaitlistForm />
 			</main>
 			<Footer />

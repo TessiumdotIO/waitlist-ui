@@ -47,7 +47,7 @@ const NavBar: React.FC = () => {
 
 				{/* Desktop navigation */}
 				<nav className="hidden md:flex items-center space-x-6">
-					<a
+					{/* <a
 						href="#features"
 						className="subtle-underline font-medium"
 					>
@@ -58,18 +58,18 @@ const NavBar: React.FC = () => {
 						className="subtle-underline font-medium"
 					>
 						How It Works
-					</a>
+					</a> */}
 					{/* <a href="#about" className="subtle-underline font-medium">About</a> */}
 				</nav>
 
 				<div className="hidden md:flex items-center space-x-4">
-					<Button
+					{/* <Button
 						className="bg-primary/10 text-primary hover:bg-primary/20 disabled"
 						variant="ghost"
 						onClick={scrollToWaitlist}
 					>
 						Login
-					</Button>
+					</Button> */}
 					<Button
 						variant="default"
 						onClick={scrollToWaitlist}
@@ -118,7 +118,7 @@ const NavBar: React.FC = () => {
 				)}
 			>
 				<div className="flex flex-col space-y-4 px-6 py-4">
-					<a
+					{/* <a
 						href="#features"
 						className="py-2 px-4 hover:bg-muted rounded-md transition-colors"
 						onClick={() => setMobileMenuOpen(false)}
@@ -131,7 +131,7 @@ const NavBar: React.FC = () => {
 						onClick={() => setMobileMenuOpen(false)}
 					>
 						How It Works
-					</a>
+					</a> */}
 					{/* <a 
             href="#about" 
             className="py-2 px-4 hover:bg-muted rounded-md transition-colors"
@@ -140,13 +140,13 @@ const NavBar: React.FC = () => {
             About
           </a> */}
 					<div className="pt-2 flex flex-col space-y-3">
-						<Button
+						{/* <Button
 							variant="outline"
 							className="w-full justify-center disabled"
 							onClick={scrollToWaitlist}
 						>
 							Login
-						</Button>
+						</Button> */}
 						<Button
 							variant="default"
 							className="w-full justify-center"
