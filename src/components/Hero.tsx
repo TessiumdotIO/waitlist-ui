@@ -6,12 +6,20 @@ import ParallaxEffect from './ParallaxEffect';
 import { ArrowDown } from 'lucide-react';
 
 const Hero: React.FC = () => {
+  const scrollToFeatures = () => {
+    const featuresElement = document.getElementById('features');
+    if (featuresElement) {
+      featuresElement.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <section className="relative min-h-screen flex items-center justify-center px-6 py-24 overflow-hidden">
       {/* Background elements */}
       <div className="absolute inset-0 -z-10 opacity-50">
         <div className="absolute top-1/3 left-1/4 w-96 h-96 rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/3 w-64 h-64 rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/3 w-64 h-64 rounded-full bg-accent/10 blur-3xl" />
+        <div className="absolute top-1/2 right-1/4 w-72 h-72 rounded-full bg-secondary/10 blur-3xl" />
       </div>
       
       <div className="max-w-7xl mx-auto w-full grid md:grid-cols-2 gap-16 items-center">
@@ -24,7 +32,7 @@ const Hero: React.FC = () => {
           
           <FadeIn direction="up" delay={300}>
             <h1 className="heading-xl mb-6">
-              Learn, Earn, and <span className="text-primary">Thrive</span> in the Web3 Ecosystem
+              Learn, Earn, and <span className="text-accent">Thrive</span> in the Web3 Ecosystem
             </h1>
           </FadeIn>
           
@@ -40,9 +48,13 @@ const Hero: React.FC = () => {
               <ShimmerButton className="text-lg px-8 py-4 font-medium">
                 Join Waitlist
               </ShimmerButton>
-              <Button variant="outline" className="group">
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2"
+                onClick={scrollToFeatures}
+              >
                 Learn More
-                <ArrowDown className="ml-2 h-4 w-4 transition-transform group-hover:translate-y-1" />
+                <ArrowDown className="h-4 w-4 transition-transform group-hover:translate-y-1" />
               </Button>
             </div>
           </FadeIn>
@@ -65,7 +77,7 @@ const Hero: React.FC = () => {
           <ParallaxEffect baseVelocity={0.1}>
             <div className="relative h-[400px] sm:h-[500px] w-full">
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-full h-full max-w-md rotate-3 rounded-2xl overflow-hidden bg-gradient-to-br from-primary/80 to-primary p-1">
+                <div className="w-full h-full max-w-md rotate-3 rounded-2xl overflow-hidden bg-gradient-to-br from-primary/80 to-accent p-1">
                   <div className="bg-background w-full h-full rounded-xl overflow-hidden flex items-center justify-center">
                     <div className="w-full max-w-xs space-y-6 p-6">
                       <div className="space-y-2">

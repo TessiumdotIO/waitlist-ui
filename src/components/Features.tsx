@@ -93,17 +93,17 @@ const Features: React.FC = () => {
           <div className="mt-20 p-8 rounded-2xl border border-border bg-card/30 backdrop-blur-sm">
             <div className="grid md:grid-cols-3 gap-8">
               <div className="flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-border pb-6 md:pb-0">
-                <h3 className="text-4xl font-bold text-primary mb-2">25K+</h3>
+                <h3 className="text-4xl font-bold text-secondary mb-2">25K+</h3>
                 <p className="text-muted-foreground text-center">Learners Enrolled</p>
               </div>
               
               <div className="flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-border pb-6 md:pb-0">
-                <h3 className="text-4xl font-bold text-primary mb-2">150+</h3>
+                <h3 className="text-4xl font-bold text-accent mb-2">150+</h3>
                 <p className="text-muted-foreground text-center">Specialized Courses</p>
               </div>
               
               <div className="flex flex-col items-center justify-center">
-                <h3 className="text-4xl font-bold text-primary mb-2">2.5M</h3>
+                <h3 className="text-4xl font-bold text-tertiary mb-2">2.5M</h3>
                 <p className="text-muted-foreground text-center">Tokens Distributed</p>
               </div>
             </div>
