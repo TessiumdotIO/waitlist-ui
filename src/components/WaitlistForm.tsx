@@ -8,8 +8,8 @@ import { cn } from "@/lib/utils";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
-	process.env.NEXT_PUBLIC_SUPABASE_URL!,
-	process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+	import.meta.env.VITE_SUPABASE_URL!,
+	import.meta.env.VITE_SUPABASE_ANON_KEY!
 );
 
 const WaitlistForm: React.FC = () => {
@@ -92,6 +92,25 @@ const WaitlistForm: React.FC = () => {
 		setIsLoading(true);
 
 		try {
+			// Check if email already exists
+			const { data: existingUser, error: checkError } = await supabase
+				.from("waitlist")
+				.select("id")
+				.eq("email", email)
+				.single(); // Only fetch one row
+
+			if (checkError && checkError.code !== "PGRST116") {
+				throw checkError;
+			}
+
+			if (existingUser) {
+				toast.error("This email is already on the waitlist!", {
+					description: "You have already signed up.",
+				});
+				setIsLoading(false);
+				return;
+			}
+
 			const { data, error } = await supabase.from("waitlist").insert([
 				{
 					name,
@@ -110,10 +129,16 @@ const WaitlistForm: React.FC = () => {
 			});
 			setEmail(""), setName(""), setExperience("beginner");
 		} catch (error) {
-			toast.error("Something went wrong", {
-				description: "Please try again later.",
-			});
-			console.error(error);
+			if (error.code === "23505") {
+				toast.error("This email is already on the waitlist!", {
+					description: "You have already signed up.",
+				});
+			} else {
+				toast.error("Something went wrong", {
+					description: "Please try again later.",
+				});
+				console.error(error);
+			}
 		} finally {
 			setIsLoading(false);
 		}
