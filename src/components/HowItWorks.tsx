@@ -92,7 +92,7 @@ const HowItWorks: React.FC = () => {
 			number: 5,
 			title: "Earn Rewards",
 			description:
-				"Receive tokens as you complete courses, pass assessments, and contribute to the community. The more you learn, the more you earn.",
+				"Receive points as you complete courses, pass assessments, and contribute to the community. The more you learn, the more you earn.",
 			isActive: true,
 			delay: 500,
 		},
@@ -175,7 +175,7 @@ const HowItWorks: React.FC = () => {
 
 									<div className="h-16 rounded-lg bg-primary/10 mt-6 flex items-center justify-center">
 										<div className="font-medium text-primary">
-											Up to 500 TSIM tokens to earn
+											Up to 500 TSIM points to earn
 										</div>
 									</div>
 								</div>

@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FadeIn, ShimmerButton } from "./Animations";
 import ParallaxEffect from "./ParallaxEffect";
 import { ArrowDown } from "lucide-react";
+import { createClient } from "@supabase/supabase-js";
 
 const Hero: React.FC = () => {
 	const scrollToFeatures = () => {
@@ -17,6 +18,33 @@ const Hero: React.FC = () => {
 			featuresElement.scrollIntoView({ behavior: "smooth" });
 		}
 	};
+
+	const [userCount, setUserCount] = useState<number>(0);
+
+	const supabase = createClient(
+		import.meta.env.VITE_SUPABASE_URL!,
+		import.meta.env.VITE_SUPABASE_ANON_KEY!
+	);
+	// Fetch user count from the database
+	useEffect(() => {
+		const fetchUserCount = async () => {
+			try {
+				const { count, error } = await supabase
+					.from("waitlist")
+					.select("*", { count: "exact", head: true }); // Fetch count of records
+
+				if (error) {
+					console.error("Error fetching user count:", error);
+				} else {
+					setUserCount(count); // Set the user count in state
+				}
+			} catch (error) {
+				console.error("Error fetching user count:", error);
+			}
+		};
+
+		fetchUserCount(); // Fetch count when component mounts
+	}, []);
 
 	return (
 		<section className="relative min-h-screen flex items-center justify-center px-6 py-24 overflow-hidden">
@@ -48,7 +76,7 @@ const Hero: React.FC = () => {
 							Join Tessium, the premier learn-to-earn platform
 							where knowledge acquisition translates directly to
 							valuable rewards. Master blockchain concepts while
-							earning tokens.
+							earning points.
 						</p>
 					</FadeIn>
 
@@ -83,7 +111,7 @@ const Hero: React.FC = () => {
 							</div>
 							<p className="text-sm text-muted-foreground">
 								<span className="font-medium text-foreground">
-									1,200+
+									{userCount}+
 								</span>{" "}
 								users already on the waitlist
 							</p>
@@ -118,7 +146,7 @@ const Hero: React.FC = () => {
 									</div>
 								</div>
 
-								<div className="absolute -bottom-4 -right-4 sm:bottom-12 sm:right-0 w-40 h-40 rounded-lg rotate-6 neo-blur flex items-center justify-center">
+								{/* <div className="absolute -bottom-4 -right-4 sm:bottom-12 sm:right-0 w-40 h-40 rounded-lg rotate-6 neo-blur flex items-center justify-center">
 									<div className="text-center p-4">
 										<div className="font-bold text-xl">
 											250 TSIM
@@ -127,7 +155,7 @@ const Hero: React.FC = () => {
 											Tokens Earned
 										</div>
 									</div>
-								</div>
+								</div> */}
 
 								<div className="absolute -top-4 -left-4 sm:top-12 sm:left-0 w-40 h-40 rounded-lg -rotate-6 neo-blur flex items-center justify-center">
 									<div className="text-center p-4">

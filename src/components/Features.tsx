@@ -102,7 +102,7 @@ const Features: React.FC = () => {
 					))}
 				</div>
 
-				<FadeIn direction="up" delay={600}>
+				{/* <FadeIn direction="up" delay={600}>
 					<div className="mt-20 p-8 rounded-2xl border border-border bg-primary/5 backdrop-blur-sm">
 						<div className="grid md:grid-cols-3 gap-8">
 							<div className="flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-border pb-6 md:pb-0">
@@ -133,7 +133,7 @@ const Features: React.FC = () => {
 							</div>
 						</div>
 					</div>
-				</FadeIn>
+				</FadeIn> */}
 			</div>
 		</section>
 	);
