@@ -336,21 +336,21 @@ const ShootingStarsBackground = () => {
     }
 
     // Create stars
-    const stars: Star[] = []
+    // const stars: Star[] = []
     const shootingStars: ShootingStar[] = []
     const maxShootingStars = 15
 
     // Initialize background stars
-    for (let i = 0; i < 150; i++) {
-      const radius = Math.random() * 1.2 // Slightly smaller
-      stars.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        radius,
-        color: `rgba(255, 255, 255, ${Math.random() * 0.4 + 0.3})`, // Reduced brightness
-        velocity: Math.random() * 0.05,
-      })
-    }
+    // for (let i = 0; i < 150; i++) {
+    //   const radius = Math.random() * 1.2 // Slightly smaller
+    //   stars.push({
+    //     x: Math.random() * canvas.width,
+    //     y: Math.random() * canvas.height,
+    //     radius,
+    //     color: `rgba(255, 255, 255, ${Math.random() * 0.4 + 0.3})`, // Reduced brightness
+    //     velocity: Math.random() * 0.05,
+    //   })
+    // }
 
     // Create a shooting star
     const createShootingStar = (): ShootingStar => {
@@ -384,15 +384,15 @@ const ShootingStarsBackground = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
       // Draw background stars
-      stars.forEach((star) => {
-        ctx.beginPath()
-        ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2)
-        ctx.fillStyle = star.color
-        ctx.fill()
+    //   stars.forEach((star) => {
+    //     ctx.beginPath()
+    //     ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2)
+    //     ctx.fillStyle = star.color
+    //     ctx.fill()
 
-        // Twinkle effect
-        star.radius = Math.max(0.1, star.radius + Math.sin(Date.now() * star.velocity) * 0.1)
-      })
+    //     // Twinkle effect
+    //     star.radius = Math.max(0.1, star.radius + Math.sin(Date.now() * star.velocity) * 0.1)
+    //   })
 
       // Update and draw shooting stars
       shootingStars.forEach((star) => {
