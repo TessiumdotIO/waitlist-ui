@@ -218,7 +218,7 @@ const FloatingImages = ({ isMobile }: { isMobile: boolean }) => {
           delay: 0.5,
         }}
       >
-        <HoverableImage src="/32.png" alt="Crypto Wallet" width={400} height={400} />
+        <HoverableImage src="/logo.PNG" alt="Crypto Wallet" width={400} height={400} />
       </motion.div>
 
       {/* <motion.div
