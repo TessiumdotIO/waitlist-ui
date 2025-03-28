@@ -120,7 +120,7 @@ const Hero = () => {
             transition={{ duration: 0.5, delay: 0.3 }}
           >
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
-              Onboard, Evolve & <span className="text-accent">Earn</span>
+              Onboard, Evolve & <span className="text-accent">Earn </span>
               in the Web3 Ecosystem
             </h1>
           </motion.div>
@@ -182,7 +182,7 @@ const Hero = () => {
 const FloatingImages = ({ isMobile }: { isMobile: boolean }) => {
   return (
     <div className={`relative ${isMobile ? "h-full w-full" : "h-[500px] w-full"}`}>
-      <motion.div
+      {/* <motion.div
         className="absolute"
         style={{
           top: "10%",
@@ -198,8 +198,8 @@ const FloatingImages = ({ isMobile }: { isMobile: boolean }) => {
           repeatType: "reverse",
         }}
       >
-        <HoverableImage src="/8.png" alt="Blockchain" width={120} height={120} />
-      </motion.div>
+        <HoverableImage src="/8.png" alt="Blockchain" width={180} height={180} />
+      </motion.div> */}
 
       <motion.div
         className="absolute"
@@ -218,10 +218,10 @@ const FloatingImages = ({ isMobile }: { isMobile: boolean }) => {
           delay: 0.5,
         }}
       >
-        <HoverableImage src="/32.png" alt="Crypto Wallet" width={150} height={150} />
+        <HoverableImage src="/32.png" alt="Crypto Wallet" width={400} height={400} />
       </motion.div>
 
-      <motion.div
+      {/* <motion.div
         className="absolute"
         style={{
           bottom: "15%",
@@ -238,9 +238,9 @@ const FloatingImages = ({ isMobile }: { isMobile: boolean }) => {
           delay: 1,
         }}
       >
-        <HoverableImage src="/33.png" alt="NFT" width={130} height={130} />
-      </motion.div>
-
+        <HoverableImage src="/8.png" alt="NFT" width={300} height={300} />
+      </motion.div> */}
+{/* 
       <motion.div
         className="absolute"
         style={{
@@ -259,8 +259,8 @@ const FloatingImages = ({ isMobile }: { isMobile: boolean }) => {
           delay: 0.2,
         }}
       >
-        <HoverableImage src="/12.png" alt="DeFi" width={140} height={140} />
-      </motion.div>
+        <HoverableImage src="/12.png" alt="DeFi" width={180} height={180} />
+      </motion.div> */}
     </div>
   )
 }
@@ -342,12 +342,12 @@ const ShootingStarsBackground = () => {
 
     // Initialize background stars
     for (let i = 0; i < 150; i++) {
-      const radius = Math.random() * 1.5
+      const radius = Math.random() * 1.2 // Slightly smaller
       stars.push({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
         radius,
-        color: `rgba(255, 255, 255, ${Math.random() * 0.5 + 0.5})`,
+        color: `rgba(255, 255, 255, ${Math.random() * 0.4 + 0.3})`, // Reduced brightness
         velocity: Math.random() * 0.05,
       })
     }
@@ -360,11 +360,11 @@ const ShootingStarsBackground = () => {
         x: Math.random() * canvas.width * 0.3,
         y: Math.random() * canvas.height * 0.5,
         length: Math.floor(Math.random() * 80) + 50,
-        speed: Math.random() * 8 + 10,
-        size: Math.random() * 2 + 1,
-        color: `rgba(255, 255, 255, 1)`,
+        speed: Math.random() * 2 + 3, // Reduced from (8 + 10) to (3 + 4)
+        size: Math.random() * 1.5 + 0.5, // Slightly reduced size
+        color: `rgba(255, 255, 255, 0.8)`, // Reduced opacity from 1 to 0.8
         trail: [],
-        opacity: 1,
+        opacity: 0.5, // Reduced from 1 to 0.7
         active: true,
       }
     }
@@ -422,8 +422,8 @@ const ShootingStarsBackground = () => {
             star.trail[star.trail.length - 1].x,
             star.trail[star.trail.length - 1].y,
           )
-          gradient.addColorStop(0, `rgba(255, 255, 255, ${star.opacity})`)
-          gradient.addColorStop(0.3, `rgba(155, 176, 255, ${star.opacity * 0.8})`)
+          gradient.addColorStop(0, `rgba(255, 255, 255, ${star.opacity * 0.8})`) // Reduced brightness
+          gradient.addColorStop(0.3, `rgba(155, 176, 255, ${star.opacity * 0.6})`) // Reduced brightness
           gradient.addColorStop(1, `rgba(121, 176, 255, 0)`)
 
           ctx.strokeStyle = gradient
@@ -439,7 +439,7 @@ const ShootingStarsBackground = () => {
           // Draw star head
           ctx.beginPath()
           ctx.arc(star.x, star.y, star.size * 1.5, 0, Math.PI * 2)
-          ctx.fillStyle = "rgba(255, 255, 255, 1)"
+          ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity * 0.9})` // Reduced brightness
           ctx.fill()
         }
 

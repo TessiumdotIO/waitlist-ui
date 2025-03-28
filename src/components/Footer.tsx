@@ -22,12 +22,12 @@ const Footer: React.FC = () => {
 						</div>
 
 						<p className="text-muted-foreground max-w-md mb-6">
-							The premier Web3 learn-to-earn platform,
+							The premier Web3 evolve-to-earn platform,
 							revolutionizing education through blockchain
 							technology and innovative reward mechanisms.
 						</p>
 
-						<div className="flex space-x-4">
+						{/* <div className="flex space-x-4">
 							<a
 								href="#"
 								className="w-10 h-10 rounded-full bg-muted flex items-center justify-center hover:bg-primary/10 transition-colors"
@@ -56,10 +56,10 @@ const Footer: React.FC = () => {
 							>
 								<Linkedin className="w-5 h-5 text-foreground/80" />
 							</a>
-						</div>
+						</div> */}
 					</div>
 
-					<div>
+					{/* <div>
 						<h3 className="font-semibold text-lg mb-4 font-display">
 							Platform
 						</h3>
@@ -80,9 +80,9 @@ const Footer: React.FC = () => {
 								</li>
 							))}
 						</ul>
-					</div>
+					</div> */}
 
-					<div>
+					{/* <div>
 						<h3 className="font-semibold text-lg mb-4 font-display">
 							Company
 						</h3>
@@ -104,7 +104,7 @@ const Footer: React.FC = () => {
 								</li>
 							))}
 						</ul>
-					</div>
+					</div> */}
 				</div>
 
 				<div className="mt-16 pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center">
@@ -113,7 +113,7 @@ const Footer: React.FC = () => {
 						reserved.
 					</p>
 
-					<div className="flex space-x-6">
+					{/* <div className="flex space-x-6">
 						{["Terms", "Privacy", "Cookies"].map((item, i) => (
 							<a
 								key={i}
@@ -123,7 +123,7 @@ const Footer: React.FC = () => {
 								{item}
 							</a>
 						))}
-					</div>
+					</div> */}
 				</div>
 			</div>
 		</footer>
