@@ -181,7 +181,7 @@ const Hero = () => {
 // Floating Web3 images component
 const FloatingImages = ({ isMobile }: { isMobile: boolean }) => {
   return (
-    <div className={`relative ${isMobile ? "h-full w-full" : "h-[500px] w-full"}`}>
+    <div className={`relative flex flex-row min-h-screen justify-center items-center ${isMobile ? "h-full w-full" : "h-[500px] w-full"}`}>
       {/* <motion.div
         className="absolute"
         style={{
