@@ -150,7 +150,7 @@ const WaitlistForm: React.FC = () => {
 				<div className="grid md:grid-cols-2 gap-12 items-center">
 					<FadeIn direction="left">
 						<div>
-							<span className="inline-block px-4 py-2 rounded-full bg-primary/10 text-primary font-medium text-sm mb-6">
+							<span className="inline-block px-4 py-2 rounded-full bg-accent/10 text-accent font-medium text-sm mb-6">
 								Exclusive Access
 							</span>
 							<h2 className="heading-lg mb-6">
@@ -172,7 +172,7 @@ const WaitlistForm: React.FC = () => {
 										key={index}
 										className="flex items-start"
 									>
-										<span className="h-6 w-6 rounded-full bg-primary/20 text-primary flex items-center justify-center mr-3 mt-0.5">
+										<span className="h-6 w-6 rounded-full bg-accent/20 text-accent flex items-center justify-center mr-3 mt-0.5">
 											✓
 										</span>
 										<span>{benefit}</span>
@@ -183,7 +183,7 @@ const WaitlistForm: React.FC = () => {
 					</FadeIn>
 
 					<FadeIn direction="right">
-						<div className="bg-primary/5 rounded-2xl border border-border p-6 md:p-8 shadow-lg">
+						<div className="bg-accent/5 rounded-2xl border border-border p-6 md:p-8 shadow-lg">
 							<div className="mb-8">
 								<h3 className="text-2xl font-semibold mb-2">
 									Reserve Your Spot
@@ -251,8 +251,8 @@ const WaitlistForm: React.FC = () => {
 												className={cn(
 													"py-2 px-3 rounded-md border text-sm capitalize transition-all",
 													experience === level
-														? "border-primary bg-primary/10 text-primary"
-														: "border-border hover:border-primary/50"
+														? "border-accent bg-accent/10 text-accent"
+														: "border-border hover:border-accent/50"
 												)}
 												onClick={() =>
 													setExperience(level)
@@ -266,7 +266,7 @@ const WaitlistForm: React.FC = () => {
 
 								<Button
 									type="submit"
-									className="w-full py-6 text-lg font-medium"
+									className="w-full py-6 text-lg font-medium bg-accent"
 									disabled={isLoading}
 								>
 									{isLoading

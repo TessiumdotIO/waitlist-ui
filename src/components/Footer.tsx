@@ -1,6 +1,8 @@
 import React from "react";
 import { cn } from "@/lib/utils";
-import { Facebook, Instagram, Twitter, Linkedin, Youtube } from "lucide-react";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faDiscord, faTelegram, faXTwitter } from '@fortawesome/free-brands-svg-icons';
+
 
 const Footer: React.FC = () => {
 	return (
@@ -9,54 +11,52 @@ const Footer: React.FC = () => {
 				<div className="grid grid-cols-1 md:grid-cols-4 gap-12">
 					<div className="md:col-span-2">
 						<div className="flex items-center gap-2 mb-4">
-							<div className="flex items-center text-primary">
+							<div className="flex items-center text-accent">
 								<img
-									src="/logo.PNG"
+									src="/logolight.PNG"
 									className="h-5 w-5 m-1"
 									alt="LOGO"
 								/>
-								<span className="text-primary font-bold text-2xl font-display">
+								<span className="text-accent font-bold text-2xl font-display">
 									Tessium
 								</span>
 							</div>
 						</div>
 
 						<p className="text-muted-foreground max-w-md mb-6">
-							The premier Web3 evolve-to-earn platform,
-							revolutionizing education through blockchain
-							technology and innovative reward mechanisms.
+						⁠Tessium is poised to become the premier infrastructure where knowledge acquisition translates to valuable growth and rewards.
+
 						</p>
 
-						{/* <div className="flex space-x-4">
+						<div className="flex space-x-4">
 							<a
-								href="#"
+								href="https://t.me/tessium_io"
 								className="w-10 h-10 rounded-full bg-muted flex items-center justify-center hover:bg-primary/10 transition-colors"
-								aria-label="Facebook"
+								aria-label="Telegram"
 							>
-								<Facebook className="w-5 h-5 text-foreground/80" />
+								{/* <Telegram className="w-5 h-5 text-foreground/80" /> */}
+								<FontAwesomeIcon icon={faTelegram} className="w-5 h-5 text-foreground/80"/>
 							</a>
 							<a
-								href="#"
+								href="https://discord.gg/7M8qjGA4GK"
 								className="w-10 h-10 rounded-full bg-muted flex items-center justify-center hover:bg-primary/10 transition-colors"
-								aria-label="Instagram"
+								aria-label="Discord"
 							>
-								<Instagram className="w-5 h-5 text-foreground/80" />
+								{/* <Discord className="w-5 h-5 text-foreground/80" /> */}
+								<FontAwesomeIcon icon={faDiscord} className="w-5 h-5 text-foreground/80"/>
+
 							</a>
 							<a
-								href="#"
+								href="https://x.com/tessium_io?s=21"
 								className="w-10 h-10 rounded-full bg-muted flex items-center justify-center hover:bg-primary/10 transition-colors"
 								aria-label="Twitter"
 							>
-								<Twitter className="w-5 h-5 text-foreground/80" />
+								{/* <Twitter className="w-5 h-5 text-foreground/80" /> */}
+								<FontAwesomeIcon icon={faXTwitter} className="w-5 h-5 text-foreground/80"/>
+
 							</a>
-							<a
-								href="#"
-								className="w-10 h-10 rounded-full bg-muted flex items-center justify-center hover:bg-primary/10 transition-colors"
-								aria-label="LinkedIn"
-							>
-								<Linkedin className="w-5 h-5 text-foreground/80" />
-							</a>
-						</div> */}
+						
+						</div>
 					</div>
 
 					{/* <div>

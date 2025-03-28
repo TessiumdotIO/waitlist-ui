@@ -109,7 +109,7 @@ const Hero = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            <span className="inline-block px-4 py-2 rounded-full bg-primary/10 text-primary font-medium text-sm mb-6">
+            <span className="inline-block px-4 py-2 rounded-full bg-accent/10 text-accent font-medium text-sm mb-6">
               Reimagining Web3 Education & Mass Adoption
             </span>
           </motion.div>
@@ -142,7 +142,7 @@ const Hero = () => {
             transition={{ duration: 0.5, delay: 0.7 }}
           >
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" className="text-lg px-8 py-4 font-medium h-auto" onClick={scrollToWaitlist}>
+              <Button size="lg" className="text-lg px-8 py-4 bg-accent font-medium h-auto" onClick={scrollToWaitlist}>
                 Join Waitlist
               </Button>
             </div>
@@ -153,7 +153,7 @@ const Hero = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.9 }}
           >
-            <div className="mt-12 flex items-center gap-6">
+            {/* <div className="mt-12 flex items-center gap-6">
               <div className="flex -space-x-2">
                 {[1, 2, 3, 4].map((i) => (
                   <div key={i} className="w-8 h-8 rounded-full bg-muted border border-background" />
@@ -162,7 +162,7 @@ const Hero = () => {
               <p className="text-sm text-muted-foreground">
                 <span className="font-medium text-foreground">{userCount}+</span> users already on the waitlist
               </p>
-            </div>
+            </div> */}
           </motion.div>
         </div>
 
@@ -218,7 +218,7 @@ const FloatingImages = ({ isMobile }: { isMobile: boolean }) => {
           delay: 0.5,
         }}
       >
-        <HoverableImage src="/logo.PNG" alt="Crypto Wallet" width={400} height={400} />
+        <HoverableImage src="/logolight.PNG" alt="Crypto Wallet" width={400} height={400} />
       </motion.div>
 
       {/* <motion.div

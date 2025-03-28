@@ -35,11 +35,11 @@ const NavBar: React.FC = () => {
 				<div className="flex items-center gap-2">
 					<div className="flex items-center text-primary">
 						<img
-							src="/logo.PNG"
+							src="/logolight.PNG"
 							className="h-5 w-5 m-1"
 							alt="LOGO"
 						/>
-						<span className="text-primary font-bold text-2xl font-display">
+						<span className="text-accent font-bold text-2xl font-display">
 							Tessium
 						</span>
 					</div>
@@ -73,7 +73,7 @@ const NavBar: React.FC = () => {
 					<Button
 						variant="default"
 						onClick={scrollToWaitlist}
-						className="px-6"
+						className="px-6 bg-accent"
 					>
 						Join Waitlist
 					</Button>
@@ -149,7 +149,7 @@ const NavBar: React.FC = () => {
 						</Button> */}
 						<Button
 							variant="default"
-							className="w-full justify-center"
+							className="w-full justify-center bg-accent"
 							onClick={scrollToWaitlist}
 						>
 							Join Waitlist
