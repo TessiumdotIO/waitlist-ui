@@ -13,7 +13,7 @@ const Footer: React.FC = () => {
 						<div className="flex items-center gap-2 mb-4">
 							<div className="flex items-center text-accent">
 								<img
-									src="/logolight.PNG"
+									src="/diamond.png"
 									className="h-5 w-5 m-1"
 									alt="LOGO"
 								/>
