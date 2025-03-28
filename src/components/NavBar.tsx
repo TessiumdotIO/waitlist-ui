@@ -35,7 +35,7 @@ const NavBar: React.FC = () => {
 				<div className="flex items-center gap-2">
 					<div className="flex items-center text-primary">
 						<img
-							src="/logolight.PNG"
+							src="/diamond.png"
 							className="h-5 w-5 m-1"
 							alt="LOGO"
 						/>
