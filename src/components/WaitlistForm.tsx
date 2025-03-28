@@ -161,7 +161,7 @@ const WaitlistForm: React.FC = () => {
 								exclusive early-access benefits:
 							</p>
 
-							<ul className="space-y-4 mb-8">
+							{/* <ul className="space-y-4 mb-8">
 								{[
 									"500 TSIM points bonus upon full launch",
 									"Priority access to premium courses",
@@ -178,7 +178,7 @@ const WaitlistForm: React.FC = () => {
 										<span>{benefit}</span>
 									</li>
 								))}
-							</ul>
+							</ul> */}
 						</div>
 					</FadeIn>
 
