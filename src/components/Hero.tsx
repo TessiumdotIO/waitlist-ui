@@ -28,6 +28,7 @@ const Hero = () => {
   const cursorRef = useRef<HTMLDivElement>(null);
   const [showModal, setShowModal] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [displayPoints, setDisplayPoints] = useState(user.points);
   const [leaderboard, setLeaderboard] = useState<User[]>([]);
   const [referralLeaderboard, setReferralLeaderboard] = useState<User[]>([]);
   const [userPosition, setUserPosition] = useState<number | null>(null);
@@ -288,34 +289,50 @@ const Hero = () => {
   //   setUser(null);
   // };
 
+  // useEffect(() => {
+  //   if (!user?.id) return;
+
+  //   const interval = setInterval(async () => {
+
+  //     setUser((prev) => {
+  //       if (!prev) return null;
+
+  //       const newPoints = prev.points + prev.base_rate;
+
+  //       (async () => {
+  //         try {
+  //           await supabase
+  //             .from("users")
+  //             .update({ points: newPoints })
+  //             .eq("id", prev.id);
+  //         } catch (error) {
+  //           console.error("Error updating points:", error);
+  //         }
+  //       })();
+
+  //       return { ...prev, points: newPoints };
+  //     });
+  //   }, 1000);
+
+  //   return () => clearInterval(interval);
+  // }, [user?.id]);
+
+  const points = user?.points;
+  const baseRate = user?.base_rate;
+
   useEffect(() => {
-    if (!user?.id) return;
+    if (points == null || baseRate == null) return;
 
-    const interval = setInterval(async () => {
-      // Use callback to get the latest state
-      setUser((prev) => {
-        if (!prev) return null;
+    const start = Date.now();
+    const basePoints = points;
 
-        const newPoints = prev.points + prev.base_rate;
-
-        // Update database with new points
-        (async () => {
-          try {
-            await supabase
-              .from("users")
-              .update({ points: newPoints })
-              .eq("id", prev.id);
-          } catch (error) {
-            console.error("Error updating points:", error);
-          }
-        })();
-
-        return { ...prev, points: newPoints };
-      });
-    }, 1000);
+    const interval = setInterval(() => {
+      const elapsed = (Date.now() - start) / 1000;
+      setDisplayPoints(basePoints + elapsed * baseRate);
+    }, 100);
 
     return () => clearInterval(interval);
-  }, [user?.id]);
+  }, [points, baseRate]);
 
   useEffect(() => {
     if (!user) return;
@@ -652,7 +669,7 @@ const Hero = () => {
         <div className="max-w-7xl mx-auto md:px-7 px-0 w-full md:flex gap-12">
           <div className="md:w-1/2 flex flex-col items-center justify-center mt-28 md:mt-0">
             <h1 className="md:text-5xl text-4xl font-bold">
-              {user.points.toFixed(2)} points
+              {displayPoints.toFixed(2)} points
             </h1>
             <p className="text-center mt-2">
               {user.base_rate.toFixed(2)} pts/sec
@@ -919,72 +936,72 @@ const Hero = () => {
 };
 
 // Floating Web3 images component
-const FloatingImages = ({ isMobile }: { isMobile: boolean }) => {
-  return (
-    <div
-      className={`relative flex flex-row min-h-screen justify-center items-center ${
-        isMobile ? "h-full w-full" : "h-[500px] w-full"
-      }`}
-    >
-      <motion.div
-        className="absolute"
-        style={{
-          top: "30%",
-          right: "15%",
-          zIndex: 2,
-        }}
-        animate={{
-          y: [0, 20, 0],
-        }}
-        transition={{
-          duration: 5,
-          repeat: Number.POSITIVE_INFINITY,
-          repeatType: "reverse",
-          delay: 0.5,
-        }}
-      >
-        <HoverableImage
-          src="/logolight.PNG"
-          alt="Crypto Wallet"
-          width={400}
-          height={400}
-        />
-      </motion.div>
-    </div>
-  );
-};
+// const FloatingImages = ({ isMobile }: { isMobile: boolean }) => {
+//   return (
+//     <div
+//       className={`relative flex flex-row min-h-screen justify-center items-center ${
+//         isMobile ? "h-full w-full" : "h-[500px] w-full"
+//       }`}
+//     >
+//       <motion.div
+//         className="absolute"
+//         style={{
+//           top: "30%",
+//           right: "15%",
+//           zIndex: 2,
+//         }}
+//         animate={{
+//           y: [0, 20, 0],
+//         }}
+//         transition={{
+//           duration: 5,
+//           repeat: Number.POSITIVE_INFINITY,
+//           repeatType: "reverse",
+//           delay: 0.5,
+//         }}
+//       >
+//         <HoverableImage
+//           src="/logolight.PNG"
+//           alt="Crypto Wallet"
+//           width={400}
+//           height={400}
+//         />
+//       </motion.div>
+//     </div>
+//   );
+// };
 
 // Hoverable image component with transparent background
-const HoverableImage = ({
-  src,
-  alt,
-  width,
-  height,
-}: {
-  src: string;
-  alt: string;
-  width: number;
-  height: number;
-}) => {
-  return (
-    <motion.div
-      className="relative"
-      whileHover={{
-        scale: 1.1,
-        filter: "drop-shadow(0 0 15px rgba(120, 120, 255, 0.6))",
-      }}
-      transition={{ duration: 0.3 }}
-    >
-      <img
-        src={src || "/placeholder.svg"}
-        alt={alt}
-        width={width}
-        height={height}
-        className="object-contain"
-      />
-    </motion.div>
-  );
-};
+// const HoverableImage = ({
+//   src,
+//   alt,
+//   width,
+//   height,
+// }: {
+//   src: string;
+//   alt: string;
+//   width: number;
+//   height: number;
+// }) => {
+//   return (
+//     <motion.div
+//       className="relative"
+//       whileHover={{
+//         scale: 1.1,
+//         filter: "drop-shadow(0 0 15px rgba(120, 120, 255, 0.6))",
+//       }}
+//       transition={{ duration: 0.3 }}
+//     >
+//       <img
+//         src={src || "/placeholder.svg"}
+//         alt={alt}
+//         width={width}
+//         height={height}
+//         className="object-contain"
+//       />
+//     </motion.div>
+//   );
+// };
 
 // Shooting stars background component
 const ShootingStarsBackground = () => {
