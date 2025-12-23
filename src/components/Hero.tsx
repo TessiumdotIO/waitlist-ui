@@ -28,7 +28,7 @@ const Hero = () => {
   const cursorRef = useRef<HTMLDivElement>(null);
   const [showModal, setShowModal] = useState(false);
   const [user, setUser] = useState<User | null>(null);
-  const [displayPoints, setDisplayPoints] = useState(user.points);
+  const [displayPoints, setDisplayPoints] = useState(0);
   const [leaderboard, setLeaderboard] = useState<User[]>([]);
   const [referralLeaderboard, setReferralLeaderboard] = useState<User[]>([]);
   const [userPosition, setUserPosition] = useState<number | null>(null);
@@ -1005,7 +1005,7 @@ const Hero = () => {
 
 // Shooting stars background component
 const ShootingStarsBackground = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
