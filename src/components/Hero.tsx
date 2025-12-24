@@ -577,6 +577,42 @@ const Hero = () => {
     };
   }, []);
 
+  // Prepare leaderboard displays so current user can be pinned to the top
+  // while still showing their real/global rank.
+  const pointsWithRank: (User & { globalRank: number })[] = leaderboard.map(
+    (u, idx) => ({ ...u, globalRank: idx + 1 })
+  );
+
+  let pointsDisplay: (User & { globalRank: number })[] = pointsWithRank.slice(
+    0,
+    15
+  );
+
+  if (user) {
+    const userEntry = pointsWithRank.find((u) => u.id === user.id);
+    const userInTop = pointsDisplay.some((u) => u.id === user.id);
+
+    if (userEntry && !userInTop) {
+      // Put the current user at the top, then include the top 14 others
+      pointsDisplay = [userEntry, ...pointsWithRank.slice(0, 14)];
+    }
+  }
+
+  const referralsWithRank: (User & { globalRank: number })[] =
+    referralLeaderboard.map((u, idx) => ({ ...u, globalRank: idx + 1 }));
+
+  let referralsDisplay: (User & { globalRank: number })[] =
+    referralsWithRank.slice(0, 15);
+
+  if (user) {
+    const userEntry = referralsWithRank.find((u) => u.id === user.id);
+    const userInTop = referralsDisplay.some((u) => u.id === user.id);
+
+    if (userEntry && !userInTop) {
+      referralsDisplay = [userEntry, ...referralsWithRank.slice(0, 14)];
+    }
+  }
+
   return (
     <section
       ref={heroRef}
@@ -738,7 +774,7 @@ const Hero = () => {
             )}
           </div>
           <div className="md:w-1/2 mt-7 md:mt-0">
-            <div className="bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl md:p-6 p-3 shadow-xl w-full md:h-full h-[300px]">
+            <div className="bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl md:p-6 p-3 shadow-xl w-full md:h-[500px] h-[300px]">
               {activeTab === "leaderboard" && (
                 <div className="w-full h-full overflow-y-auto">
                   <div className="flex items-center justify-between">
@@ -770,102 +806,116 @@ const Hero = () => {
                   <div className="p-2 mt-4">
                     {activeLeaderboard === "points" && (
                       <div className="space-y-2">
-                        {leaderboard.slice(0, 15).map((u, index) => (
-                          <div
-                            key={u.id}
-                            className={`flex items-center justify-between px-4 py-2 rounded-xl transition-all ${
-                              u.id === user.id
-                                ? "bg-gradient-to-r from-purple-600 to-blue-600 shadow-lg scale-105"
-                                : "bg-white bg-opacity-5 hover:bg-opacity-10"
-                            }`}
-                          >
-                            <div className="flex items-center gap-2">
-                              <div
-                                className={`text-sm font-bold w-4 ${
-                                  index === 0
-                                    ? "text-yellow-400"
-                                    : index === 1
-                                    ? "text-gray-300"
-                                    : index === 2
-                                    ? "text-orange-400"
-                                    : "text-gray-400"
-                                }`}
-                              >
-                                #{index + 1}
+                        {pointsDisplay.map((entry, index) => {
+                          const isUser = entry.id === user?.id;
+                          const displayRank = isUser
+                            ? userPosition ?? entry.globalRank
+                            : entry.globalRank;
+
+                          return (
+                            <div
+                              key={entry.id}
+                              className={`flex items-center justify-between px-4 py-2 rounded-xl transition-all ${
+                                isUser
+                                  ? "bg-gradient-to-r from-purple-600 to-blue-600 shadow-lg scale-105"
+                                  : "bg-white bg-opacity-5 hover:bg-opacity-10"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className={`text-sm font-bold w-4 ${
+                                    displayRank === 1
+                                      ? "text-yellow-400"
+                                      : displayRank === 2
+                                      ? "text-gray-300"
+                                      : displayRank === 3
+                                      ? "text-orange-400"
+                                      : "text-gray-400"
+                                  }`}
+                                >
+                                  #{displayRank}
+                                </div>
+
+                                {entry.avatar_url && (
+                                  <img
+                                    src={entry.avatar_url}
+                                    alt={entry.name}
+                                    className="w-7 h-7 rounded-full border-2 border-white border-opacity-20"
+                                  />
+                                )}
+
+                                <div>
+                                  <div className="font-semibold md:text-lg text-sm">
+                                    {entry.name}
+                                  </div>
+                                </div>
                               </div>
 
-                              {u.avatar_url && (
-                                <img
-                                  src={u.avatar_url}
-                                  alt={u.name}
-                                  className="w-7 h-7 rounded-full border-2 border-white border-opacity-20"
-                                />
-                              )}
-
-                              <div>
-                                <div className="font-semibold md:text-lg text-sm">
-                                  {u.name}
+                              <div className="text-right">
+                                <div className="text-sm font-bold">
+                                  {entry.points.toFixed(1)}
                                 </div>
                               </div>
                             </div>
-
-                            <div className="text-right">
-                              <div className="text-sm font-bold">
-                                {u.points.toFixed(1)}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                     {activeLeaderboard === "referrals" && (
                       <div className="space-y-2">
-                        {referralLeaderboard.slice(0, 15).map((u, index) => (
-                          <div
-                            key={u.id}
-                            className={`flex items-center justify-between px-4 py-2 rounded-xl transition-all ${
-                              u.id === user.id
-                                ? "bg-gradient-to-r from-purple-600 to-blue-600 shadow-lg scale-105"
-                                : "bg-white bg-opacity-5 hover:bg-opacity-10"
-                            }`}
-                          >
-                            <div className="flex items-center gap-2">
-                              <div
-                                className={`text-sm font-bold w-4 ${
-                                  index === 0
-                                    ? "text-yellow-400"
-                                    : index === 1
-                                    ? "text-gray-300"
-                                    : index === 2
-                                    ? "text-orange-400"
-                                    : "text-gray-400"
-                                }`}
-                              >
-                                #{index + 1}
+                        {referralsDisplay.map((entry, index) => {
+                          const isUser = entry.id === user?.id;
+                          const displayRank = isUser
+                            ? userPosition ?? entry.globalRank
+                            : entry.globalRank;
+
+                          return (
+                            <div
+                              key={entry.id}
+                              className={`flex items-center justify-between px-4 py-2 rounded-xl transition-all ${
+                                isUser
+                                  ? "bg-gradient-to-r from-purple-600 to-blue-600 shadow-lg scale-105"
+                                  : "bg-white bg-opacity-5 hover:bg-opacity-10"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className={`text-sm font-bold w-4 ${
+                                    displayRank === 1
+                                      ? "text-yellow-400"
+                                      : displayRank === 2
+                                      ? "text-gray-300"
+                                      : displayRank === 3
+                                      ? "text-orange-400"
+                                      : "text-gray-400"
+                                  }`}
+                                >
+                                  #{displayRank}
+                                </div>
+
+                                {entry.avatar_url && (
+                                  <img
+                                    src={entry.avatar_url}
+                                    alt={entry.name}
+                                    className="w-7 h-7 rounded-full border-2 border-white border-opacity-20"
+                                  />
+                                )}
+
+                                <div>
+                                  <div className="font-semibold md:text-lg text-sm">
+                                    {entry.name}
+                                  </div>
+                                </div>
                               </div>
 
-                              {u.avatar_url && (
-                                <img
-                                  src={u.avatar_url}
-                                  alt={u.name}
-                                  className="w-7 h-7 rounded-full border-2 border-white border-opacity-20"
-                                />
-                              )}
-
-                              <div>
-                                <div className="font-semibold md:text-lg text-sm">
-                                  {u.name}
+                              <div className="text-right">
+                                <div className="text-sm font-bold">
+                                  {entry.referral_count}
                                 </div>
                               </div>
                             </div>
-
-                            <div className="text-right">
-                              <div className="text-sm font-bold">
-                                {u.referral_count}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
