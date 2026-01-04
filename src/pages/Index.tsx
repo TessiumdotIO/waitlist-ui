@@ -5,8 +5,12 @@ import Features from "@/components/Features";
 import HowItWorks from "@/components/HowItWorks";
 import WaitlistForm from "@/components/WaitlistForm";
 import Footer from "@/components/Footer";
+import { useAuth } from "@/components/AuthContext";
+import AuthProvider from "@/components/AuthProvider";
 
-const Index = () => {
+const PageContent: React.FC = () => {
+  const { user } = useAuth();
+
   // Smooth scroll implementation
   useEffect(() => {
     const handleAnchorClick = (e: MouseEvent) => {
@@ -44,8 +48,17 @@ const Index = () => {
         {/* <HowItWorks /> */}
         {/* <WaitlistForm /> */}
       </main>
-      <Footer />
+      {!user ? <Footer /> : null}
     </div>
+  );
+};
+
+const Index = () => {
+  // Smooth scroll implementation
+  return (
+    <AuthProvider>
+      <PageContent />
+    </AuthProvider>
   );
 };
 

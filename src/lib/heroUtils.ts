@@ -34,5 +34,5 @@ export const TWITTER_TASKS: TwitterTask[] = [
 ];
 
 export const TWITTER_CONNECT_REWARD = 0.5;
-export const REFERRAL_BONUS = 5;
+export const REFERRAL_BONUS = 0.5;
 export const BASE_RATE = 0.1;
