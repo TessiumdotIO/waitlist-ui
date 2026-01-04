@@ -652,8 +652,8 @@ const Hero = () => {
             transition={{ duration: 0.5, delay: 0.3 }}
           >
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-center">
-              Onboard, Evolve & <span className="text-accent">Earn </span>
-              in the Web3 Ecosystem
+              Build Real <span className="text-accent">Users, </span>
+              Not Just Wallets
             </h1>
           </motion.div>
           <Button
