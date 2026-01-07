@@ -618,7 +618,7 @@ const Hero = () => {
   return (
     <section
       ref={heroRef}
-      className={`relative md:min-h-screen flex items-center justify-center px-6 ${
+      className={`relative md:min-h-screen flex items-center justify-center md:px-6 px-2 ${
         !user && "py-24"
       } overflow-hidden`}
     >
@@ -817,7 +817,7 @@ const Hero = () => {
                           return (
                             <div
                               key={entry.id}
-                              className={`flex items-center justify-between px-4 py-2 rounded-xl transition-all ${
+                              className={`flex items-center justify-between md:px-4 px-2 py-2 rounded-xl transition-all ${
                                 isUser
                                   ? "bg-gradient-to-r from-purple-600 to-blue-600 shadow-lg scale-105"
                                   : "bg-white bg-opacity-5 hover:bg-opacity-10"
@@ -875,7 +875,7 @@ const Hero = () => {
                           return (
                             <div
                               key={entry.id}
-                              className={`flex items-center justify-between px-4 py-2 rounded-xl transition-all ${
+                              className={`flex items-center justify-between md:px-4 px-2 py-2 rounded-xl transition-all ${
                                 isUser
                                   ? "bg-gradient-to-r from-purple-600 to-blue-600 shadow-lg scale-105"
                                   : "bg-white bg-opacity-5 hover:bg-opacity-10"
