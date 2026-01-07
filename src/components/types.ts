@@ -13,6 +13,7 @@ export interface User {
   referral_count: number;
   referred_by?: string;
   created_at: string;
+  display_name?: string;
 }
 
 export interface TwitterTask {
