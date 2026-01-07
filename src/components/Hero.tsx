@@ -21,7 +21,7 @@ import {
   TWITTER_TASKS,
 } from "@/lib/heroUtils";
 import { ShootingStar, TwitterTask, User } from "./types";
-import { generateRandomName } from "@/lib/nameGenerator";
+import { generateDisplayName } from "@/lib/nameGenerator";
 
 const Hero = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -177,7 +177,7 @@ const Hero = () => {
             name:
               authUser.user_metadata?.full_name ||
               authUser.email!.split("@")[0],
-            display_name: generateRandomName(),
+            display_name: generateDisplayName(authUser.id),
             avatar_url: authUser.user_metadata?.avatar_url,
             points: 0,
             base_rate: BASE_RATE,
@@ -848,7 +848,8 @@ const Hero = () => {
 
                                 <div>
                                   <div className="font-semibold md:text-lg text-sm">
-                                    {entry.display_name || entry.name}
+                                    {entry.display_name ||
+                                      generateDisplayName(entry.id)}
                                   </div>
                                 </div>
                               </div>
@@ -905,7 +906,8 @@ const Hero = () => {
 
                                 <div>
                                   <div className="font-semibold md:text-lg text-sm">
-                                    {entry.display_name || entry.name}
+                                    {entry.display_name ||
+                                      generateDisplayName(entry.id)}
                                   </div>
                                 </div>
                               </div>
