@@ -776,7 +776,7 @@ const Hero = () => {
             )}
           </div>
           <div className="md:w-1/2 mt-7 md:mt-0">
-            <div className="bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl md:p-6 p-3 shadow-xl w-full md:h-[500px] h-[300px]">
+            <div className="bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl md:p-6 p-3 shadow-xl w-full md:h-[500px] h-[300px] mb-7 md:mb-1">
               {activeTab === "leaderboard" && (
                 <div className="w-full h-full overflow-y-auto">
                   <div className="flex items-center justify-between">
