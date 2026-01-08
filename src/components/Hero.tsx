@@ -776,7 +776,7 @@ const Hero = () => {
             )}
           </div>
           <div className="md:w-1/2 mt-7 md:mt-0">
-            <div className="flex sm:hidden items-center justify-center my-5 gap-2 p-2 bg-black bg-opacity-40 rounded-full border border-gray-700 text-sm">
+            <div className="flex sm:hidden items-center my-5 gap-2 p-2 bg-black bg-opacity-40 rounded-full border border-gray-700 text-sm">
               <button
                 onClick={() => setActiveTab("leaderboard")}
                 className={`px-4 py-1 rounded-full ${
