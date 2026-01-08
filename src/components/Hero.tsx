@@ -776,6 +776,26 @@ const Hero = () => {
             )}
           </div>
           <div className="md:w-1/2 mt-7 md:mt-0">
+            <div className="flex sm:hidden items-center justify-center my-5 gap-2 p-2 bg-black bg-opacity-40 rounded-full border border-gray-700 text-sm">
+              <button
+                onClick={() => setActiveTab("leaderboard")}
+                className={`px-4 py-1 rounded-full ${
+                  activeTab === "leaderboard"
+                    ? "bg-white text-black"
+                    : " text-white"
+                }`}
+              >
+                Leaderboard
+              </button>
+              <button
+                onClick={() => setActiveTab("quests")}
+                className={`px-4 py-1 rounded-full ${
+                  activeTab === "quests" ? "bg-white text-black" : " text-white"
+                }`}
+              >
+                Quests
+              </button>
+            </div>
             <div className="bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl md:p-6 p-3 shadow-xl w-full md:h-[500px] h-[300px] mb-7 md:mb-1">
               {activeTab === "leaderboard" && (
                 <div className="w-full h-full overflow-y-auto">
@@ -959,7 +979,7 @@ const Hero = () => {
                 </div>
               )}
 
-              <div className="flex items-center gap-2 absolute bottom-4 left-1/2 -translate-x-1/2 p-2 bg-black bg-opacity-40 rounded-full border border-gray-700 text-sm">
+              <div className="sm:flex hidden items-center gap-2 absolute bottom-4 left-1/2 -translate-x-1/2 p-2 bg-black bg-opacity-40 rounded-full border border-gray-700 text-sm">
                 <button
                   onClick={() => setActiveTab("leaderboard")}
                   className={`px-4 py-1 rounded-full ${
