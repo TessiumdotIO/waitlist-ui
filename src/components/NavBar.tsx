@@ -25,7 +25,7 @@ const NavBar: React.FC = () => {
   return (
     <header
       className={cn(
-        "fixed top-0 left-0 right-0 z-50 px-6 lg:px-10 transition-all duration-300 py-4",
+        "fixed sm:top-0 top-2 sm:left-0 left-2 sm:right-0 right-2 rounded-full sm:rounded-none z-50 px-6 lg:px-10 transition-all duration-300 py-4",
         scrolled
           ? "backdrop-blur-md bg-background/80 shadow-sm"
           : "bg-transparent"
