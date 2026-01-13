@@ -251,7 +251,7 @@ const Hero = () => {
         taskUrl = `https://x.com/intent/post?text=${encodedTweet}`;
       }
 
-      const popup = window.open(task.url, "_blank", "width=600,height=700");
+      const popup = window.open(taskUrl, "_blank", "width=600,height=700");
       const updatedTasksCompleted = [...completedTasks, task.id];
       const updatedBaseRate = user.base_rate + task.reward;
 
