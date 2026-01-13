@@ -8,6 +8,7 @@ type AuthContextType = {
   loading: boolean;
   // allow setState-style updater (functional updates) for convenience
   setUser: React.Dispatch<React.SetStateAction<AppUser | null>>;
+  refreshUser: () => Promise<void>;
 };
 
 export const AuthContext = createContext<AuthContextType>({
@@ -16,6 +17,7 @@ export const AuthContext = createContext<AuthContextType>({
   // default no-op until provider overrides
   // cast to satisfy the dispatch signature
   setUser: (() => {}) as React.Dispatch<React.SetStateAction<AppUser | null>>,
+  refreshUser: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
