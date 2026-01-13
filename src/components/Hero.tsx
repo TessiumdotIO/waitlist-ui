@@ -239,6 +239,26 @@ const Hero = () => {
     if (completedTasks.includes(task.id)) return;
 
     try {
+      let taskUrl = task.url;
+
+      // Handle share quest dynamically
+      if (task.isShareQuest) {
+        const referralLink = `${window.location.origin}?ref=${user.referral_code}`;
+
+        const tweetText = `The shift is coming 🌊
+
+@Tessium_io is building the AI-edutainment layer powering real onboarding.
+
+I just joined the limited waitlist - earning early points before launch.
+
+Don't snooze 👉 ${referralLink}
+
+#Tessium #Web3 #Crypto`;
+
+        const encodedTweet = encodeURIComponent(tweetText);
+        taskUrl = `https://x.com/intent/tweet?text=${encodedTweet}`;
+      }
+
       const popup = window.open(task.url, "_blank", "width=600,height=700");
       const updatedTasksCompleted = [...completedTasks, task.id];
       const updatedBaseRate = user.base_rate + task.reward;
