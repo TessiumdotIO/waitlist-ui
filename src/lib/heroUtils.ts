@@ -11,14 +11,8 @@ export const TWITTER_TASKS: TwitterTask[] = [
     id: "share_on_twitter",
     name: "Share your referral link on X",
     url: "",
-    reward: 1.0,
+    reward: 0.25,
     isShareQuest: true,
-  },
-  {
-    id: "share_refcode",
-    name: "Share Referral Code",
-    reward: 0.2,
-    url: "https://x.com/intent/follow?screen_name=Tessium_io",
   },
   {
     id: "join_telegram",
