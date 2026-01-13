@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/components/AuthContext";
 import { User as SupabaseUser } from "@supabase/supabase-js";
 import {
   BASE_RATE,
@@ -28,7 +29,7 @@ const Hero = () => {
   const heroRef = useRef<HTMLDivElement>(null);
   const cursorRef = useRef<HTMLDivElement>(null);
   const [showModal, setShowModal] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
+  const { user, setUser } = useAuth();
   const [displayPoints, setDisplayPoints] = useState(0);
   const [leaderboard, setLeaderboard] = useState<User[]>([]);
   const [referralLeaderboard, setReferralLeaderboard] = useState<User[]>([]);
@@ -43,213 +44,7 @@ const Hero = () => {
     "points" | "referrals"
   >("points");
 
-  useEffect(() => {
-    const handleOAuthCallback = async () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const code = urlParams.get("code");
-      const errorDesc = urlParams.get("error_description");
-
-      if (errorDesc) {
-        console.error("OAuth error:", errorDesc);
-        alert(`Twitter connect failed: ${errorDesc}`);
-        window.history.replaceState(
-          {},
-          document.title,
-          window.location.pathname
-        );
-        return;
-      }
-
-      if (code) {
-        try {
-          const {
-            data: { session },
-            error,
-          } = await supabase.auth.getSession();
-          if (error) throw error;
-          if (session) {
-            console.log("Session after callback:", session);
-            await loadUserData(session.user.id);
-            const twitterIdentity = session.user.identities?.find(
-              (id) => id.provider === "twitter"
-            );
-            if (twitterIdentity && !user?.twitter_connected) {
-              const twitterData = twitterIdentity.identity_data;
-              const updatedBaseRate =
-                user?.base_rate + TWITTER_CONNECT_REWARD ||
-                BASE_RATE + TWITTER_CONNECT_REWARD;
-              await supabase
-                .from("users")
-                .update({
-                  twitter_connected: true,
-                  base_rate: updatedBaseRate,
-                  twitter_username: twitterData?.user_name,
-                  twitter_avatar: twitterData?.profile_image_url,
-                })
-                .eq("id", session.user.id);
-
-              setUser((prev) =>
-                prev
-                  ? {
-                      ...prev,
-                      twitter_connected: true,
-                      base_rate: updatedBaseRate,
-                    }
-                  : null
-              );
-            }
-          }
-        } catch (error) {
-          console.error("Callback processing error:", error);
-          alert("Failed to process Twitter connect. Please try again.");
-        } finally {
-          // Clear params from URL to prevent loops
-          window.history.replaceState(
-            {},
-            document.title,
-            window.location.pathname
-          );
-        }
-      }
-    };
-
-    handleOAuthCallback();
-
-    const checkAuth = async () => {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        if (session?.user) {
-          await loadUserData(session.user.id);
-          const twitterIdentity = session.user.identities?.find(
-            (identity) => identity.provider === "twitter"
-          );
-
-          if (twitterIdentity && user && !user.twitter_connected) {
-            const twitterData = twitterIdentity.identity_data;
-            const updatedBaseRate = user.base_rate + TWITTER_CONNECT_REWARD;
-
-            await supabase
-              .from("users")
-              .update({
-                twitter_connected: true,
-                base_rate: updatedBaseRate,
-                twitter_username: twitterData?.user_name,
-                twitter_avatar: twitterData?.profile_image_url,
-              })
-              .eq("id", user.id);
-
-            setUser({
-              ...user,
-              twitter_connected: true,
-              base_rate: updatedBaseRate,
-            });
-          }
-        }
-      } catch (error) {
-        console.error("Auth check error:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAuth();
-
-    const handleAuthenticatedUser = async (authUser: SupabaseUser) => {
-      try {
-        const { data: existingUser } = await supabase
-          .from("users")
-          .select("*")
-          .eq("id", authUser.id)
-          .single();
-
-        if (existingUser) {
-          setUser(existingUser);
-        } else {
-          const urlParams = new URLSearchParams(window.location.search);
-          const referralCode = urlParams.get("ref");
-
-          const newUser = {
-            id: authUser.id,
-            email: authUser.email!,
-            name:
-              authUser.user_metadata?.full_name ||
-              authUser.email!.split("@")[0],
-            display_name: generateDisplayName(authUser.id),
-            avatar_url: authUser.user_metadata?.avatar_url,
-            points: 0,
-            base_rate: BASE_RATE,
-            twitter_connected: false,
-            tasks_completed: [],
-            referral_code: generateReferralCode(),
-            referral_count: 0,
-            referred_by: referralCode || null,
-            created_at: new Date().toISOString(),
-          };
-
-          const { data: insertedUser } = await supabase
-            .from("users")
-            .insert([newUser])
-            .select()
-            .single();
-          if (referralCode && insertedUser) {
-            console.log("Rewarding referrer with code:", referralCode);
-            await rewardReferrer(referralCode);
-            setTimeout(() => {
-              window.location.reload();
-            }, 1000);
-          }
-
-          setUser(insertedUser || (newUser as User));
-        }
-
-        setShowModal(false);
-      } catch (error) {
-        console.error("Error handling authenticated user:", error);
-      }
-    };
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === "SIGNED_IN" && session?.user) {
-          await handleAuthenticatedUser(session.user);
-        } else if (event === "SIGNED_OUT") {
-          setUser(null);
-        } else if (event === "USER_UPDATED" && session?.user) {
-          const twitterIdentity = session.user.identities?.find(
-            (identity) => identity.provider === "twitter"
-          );
-
-          if (twitterIdentity && user && !user.twitter_connected) {
-            const twitterData = twitterIdentity.identity_data;
-            const updatedBaseRate = user.base_rate + TWITTER_CONNECT_REWARD;
-
-            await supabase
-              .from("users")
-              .update({
-                twitter_connected: true,
-                base_rate: updatedBaseRate,
-                twitter_username: twitterData?.user_name,
-                twitter_avatar: twitterData?.profile_image_url,
-              })
-              .eq("id", user.id);
-
-            setUser({
-              ...user,
-              twitter_connected: true,
-              base_rate: updatedBaseRate,
-            });
-          }
-        }
-      }
-    );
-
-    return () => {
-      authListener?.subscription?.unsubscribe();
-    };
-  }, [user]);
+  // Auth is centralized in AuthProvider; Hero reads auth via useAuth().
 
   const loadUserData = async (userId: string) => {
     try {
@@ -261,9 +56,13 @@ const Hero = () => {
 
       if (data) {
         setUser(data);
+        return data as User;
       }
+
+      return null;
     } catch (error) {
       console.error("Error loading user data:", error);
+      return null;
     }
   };
 
