@@ -29,7 +29,7 @@ const Hero = () => {
   const heroRef = useRef<HTMLDivElement>(null);
   const cursorRef = useRef<HTMLDivElement>(null);
   const [showModal, setShowModal] = useState(false);
-  const { user, setUser, loading } = useAuth();
+  const { user, setUser, loading, refreshUser } = useAuth();
   const [displayPoints, setDisplayPoints] = useState(0);
   const [leaderboard, setLeaderboard] = useState<User[]>([]);
   const [referralLeaderboard, setReferralLeaderboard] = useState<User[]>([]);
@@ -46,25 +46,25 @@ const Hero = () => {
 
   // Auth is centralized in AuthProvider; Hero reads auth via useAuth().
 
-  const loadUserData = async (userId: string) => {
-    try {
-      const { data } = await supabase
-        .from("users")
-        .select("*")
-        .eq("id", userId)
-        .single();
+  // const loadUserData = async (userId: string) => {
+  //   try {
+  //     const { data } = await supabase
+  //       .from("users")
+  //       .select("*")
+  //       .eq("id", userId)
+  //       .single();
 
-      if (data) {
-        setUser(data);
-        return data as User;
-      }
+  //     if (data) {
+  //       setUser(data);
+  //       return data as User;
+  //     }
 
-      return null;
-    } catch (error) {
-      console.error("Error loading user data:", error);
-      return null;
-    }
-  };
+  //     return null;
+  //   } catch (error) {
+  //     console.error("Error loading user data:", error);
+  //     return null;
+  //   }
+  // };
 
   const handleGoogleSignIn = async () => {
     setAuthLoading(true);
@@ -283,7 +283,7 @@ const Hero = () => {
                       } else {
                         console.log("Retry success:", retryData);
 
-                        loadUserData(user.id);
+                        refreshUser();
                       }
                     },
                     (retryRejectErr) => {
@@ -293,7 +293,7 @@ const Hero = () => {
               }, 2000);
             } else {
               console.log("Background Supabase RPC success:", data);
-              loadUserData(user.id);
+              refreshUser();
             }
           },
           (rejectErr) => {
@@ -305,33 +305,33 @@ const Hero = () => {
     }
   };
 
-  const generateReferralCode = (): string => {
-    return Math.random().toString(36).substring(2, 8).toUpperCase();
-  };
+  // const generateReferralCode = (): string => {
+  //   return Math.random().toString(36).substring(2, 8).toUpperCase();
+  // };
 
-  const rewardReferrer = async (referralCode: string) => {
-    try {
-      const { data: referrer } = await supabase
-        .from("users")
-        .select("*")
-        .eq("referral_code", referralCode)
-        .single();
+  // const rewardReferrer = async (referralCode: string) => {
+  //   try {
+  //     const { data: referrer } = await supabase
+  //       .from("users")
+  //       .select("*")
+  //       .eq("referral_code", referralCode)
+  //       .single();
 
-      if (referrer) {
-        await supabase
-          .from("users")
-          .update({
-            // points: referrer.points + REFERRAL_BONUS,
-            base_rate: referrer.base_rate + REFERRAL_BONUS,
-            referral_count: referrer.referral_count + 1,
-          })
-          .eq("id", referrer.id);
-      }
-    } catch (error) {
-      console.error("Error rewarding referrer:", error);
-      alert(`Failed to reward referrer: ${error.message}`);
-    }
-  };
+  //     if (referrer) {
+  //       await supabase
+  //         .from("users")
+  //         .update({
+
+  //           base_rate: referrer.base_rate + REFERRAL_BONUS,
+  //           referral_count: referrer.referral_count + 1,
+  //         })
+  //         .eq("id", referrer.id);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error rewarding referrer:", error);
+  //     alert(`Failed to reward referrer: ${error.message}`);
+  //   }
+  // };
 
   const copyReferralLink = () => {
     const link = `${window.location.origin}?ref=${user?.referral_code}`;
@@ -341,19 +341,19 @@ const Hero = () => {
   };
 
   // Scroll functions
-  const scrollToFeatures = () => {
-    const featuresElement = document.getElementById("features");
-    if (featuresElement) {
-      featuresElement.scrollIntoView({ behavior: "smooth" });
-    }
-  };
+  // const scrollToFeatures = () => {
+  //   const featuresElement = document.getElementById("features");
+  //   if (featuresElement) {
+  //     featuresElement.scrollIntoView({ behavior: "smooth" });
+  //   }
+  // };
 
-  const scrollToWaitlist = () => {
-    const waitlistElement = document.getElementById("waitlist");
-    if (waitlistElement) {
-      waitlistElement.scrollIntoView({ behavior: "smooth" });
-    }
-  };
+  // const scrollToWaitlist = () => {
+  //   const waitlistElement = document.getElementById("waitlist");
+  //   if (waitlistElement) {
+  //     waitlistElement.scrollIntoView({ behavior: "smooth" });
+  //   }
+  // };
 
   // Custom cursor effect
   useEffect(() => {
