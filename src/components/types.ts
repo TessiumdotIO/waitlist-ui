@@ -21,6 +21,7 @@ export interface TwitterTask {
   name: string;
   reward: number;
   url: string;
+  isShareQuest?: boolean;
 }
 
 export interface Star {
