@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { User as AppUser } from "./types"; // Adjust path as needed
-import { AuthContext } from "./AuthContext"; // Adjust path as needed
+import { User as AppUser } from "./types";
+import { AuthContext } from "./AuthContext";
 import { generateDisplayName } from "@/lib/nameGenerator";
 import { BASE_RATE } from "@/lib/heroUtils";
 
@@ -24,10 +24,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           .eq("id", userId)
           .single();
 
-        if (mounted) setUser(data || null);
+        if (mounted) {
+          setUser(data || null);
+          setLoading(false); // ADD THIS
+        }
       } catch (error) {
         console.error("AuthProvider: failed to load user:", error);
-        if (mounted) setUser(null);
+        if (mounted) {
+          setUser(null);
+          setLoading(false); // ADD THIS
+        }
       }
     };
 
@@ -39,11 +45,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
         if (session?.user) {
           await loadUserData(session.user.id);
+        } else {
+          // ADD THIS ELSE BLOCK - This is the key fix!
+          if (mounted) {
+            setUser(null);
+            setLoading(false);
+          }
         }
       } catch (error) {
         console.error("AuthProvider: checkSession error", error);
-      } finally {
-        if (mounted) setLoading(false);
+        if (mounted) setLoading(false); // This was already here, keep it
       }
     };
 
@@ -52,7 +63,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === "SIGNED_IN" && session?.user) {
-          // Ensure there's a matching row in `users` table; create if missing
           try {
             const userId = session.user.id;
 
@@ -65,7 +75,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             if (existing) {
               if (mounted) setUser(existing);
             } else {
-              // create a minimal user record
               const urlParams = new URLSearchParams(window.location.search);
               const referralCode = urlParams.get("ref");
 
@@ -109,7 +118,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                     await supabase
                       .from("users")
                       .update({
-                        base_rate: (referrer.base_rate || 0) + 0, // keep base change minimal here
+                        base_rate: (referrer.base_rate || 0) + 0,
                         referral_count: (referrer.referral_count || 0) + 1,
                       })
                       .eq("id", referrer.id);
@@ -125,7 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             console.error("AuthProvider: error handling SIGNED_IN:", err);
           }
         } else if (event === "SIGNED_OUT") {
-          setUser(null);
+          if (mounted) setUser(null);
         } else if (
           (event === "USER_UPDATED" || event === "TOKEN_REFRESHED") &&
           session?.user
