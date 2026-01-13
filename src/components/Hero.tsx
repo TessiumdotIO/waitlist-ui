@@ -772,7 +772,7 @@ const Hero = () => {
                         <button
                           key={task.id}
                           onClick={() => handleTaskClick(task)}
-                          disabled={isCompleted || !user}
+                          // disabled={isCompleted || !user}
                           className={`w-full md:text-base text-sm text-left text-white px-4 py-3 rounded-lg font-semibold transition-all flex items-center justify-between shadow-lg transform hover:scale-105 ${
                             isCompleted
                               ? "bg-gray-600 cursor-not-allowed"
