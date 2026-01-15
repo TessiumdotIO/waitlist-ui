@@ -10,7 +10,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [user, setUser] = useState<AppUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Set to false by default
 
   // Load user data from Supabase users table
   const loadUserData = async (userId: string): Promise<boolean> => {
@@ -91,11 +91,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       } catch (err) {
         console.error("Session initialization error:", err);
         setUser(null);
-      } finally {
-        // CRITICAL: Always set loading to false, regardless of success/failure
-        if (mounted) {
-          setLoading(false);
-        }
       }
     };
 
@@ -112,13 +107,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           session?.user
         ) {
           await loadUserData(session.user.id);
-          if (mounted) setLoading(false);
           return;
         }
 
         if (event === "SIGNED_OUT") {
           setUser(null);
-          if (mounted) setLoading(false);
         }
       }
     );
