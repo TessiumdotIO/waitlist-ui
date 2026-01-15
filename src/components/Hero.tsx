@@ -457,7 +457,7 @@ const Hero = () => {
           <FloatingImages isMobile={true} />
         </div>
       </div> */}
-      {loading && user === null ? (
+      {loading ? (
         // Only show loading if we're still checking AND don't have user data yet
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto"></div>

@@ -16,13 +16,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   // Move loadUserData outside useEffect so we can expose it
   const loadUserData = async (userId: string) => {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("users")
         .select("*")
         .eq("id", userId)
         .single();
 
-      setUser(data || null);
+      if (error || !data) {
+        console.warn("User row missing, signing out");
+        await supabase.auth.signOut();
+        setUser(null);
+        return null;
+      }
+
+      setUser(data);
       return data;
     } catch (error) {
       console.error("AuthProvider: failed to load user:", error);
