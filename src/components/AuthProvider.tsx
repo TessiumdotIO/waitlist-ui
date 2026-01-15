@@ -70,14 +70,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === "SIGNED_IN" && session?.user) {
-          // ... rest of your SIGNED_IN logic
-        } else if (event === "SIGNED_OUT") {
-          setUser(null);
-        } else if (
+          const referralCode = new URLSearchParams(window.location.search).get(
+            "ref"
+          );
+
+          if (referralCode) {
+            await supabase.rpc("handle_referral", {
+              referral_code: referralCode,
+              new_user_id: session.user.id,
+            });
+          }
+
+          await loadUserData(session.user.id);
+          setLoading(false);
+          return;
+        }
+
+        if (
           (event === "USER_UPDATED" || event === "TOKEN_REFRESHED") &&
           session?.user
         ) {
+          // SAFE: state sync only
           await loadUserData(session.user.id);
+          return;
+        }
+
+        if (event === "SIGNED_OUT") {
+          setUser(null);
+          setLoading(false);
         }
       }
     );
