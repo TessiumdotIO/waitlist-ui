@@ -41,26 +41,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     let mounted = true;
 
     const checkSession = async () => {
-      console.log("🔍 Checking session...");
       try {
         const {
           data: { session },
         } = await supabase.auth.getSession();
 
-        console.log("📦 Session found:", session);
-
         if (session?.user) {
-          console.log("👤 User found in session:", session.user.id);
           await loadUserData(session.user.id);
         } else {
-          console.log("❌ No session found");
-          if (mounted) {
-            setUser(null);
-            setLoading(false);
-          }
+          setUser(null);
         }
       } catch (error) {
         console.error("AuthProvider: checkSession error", error);
+        setUser(null);
+      } finally {
         if (mounted) setLoading(false);
       }
     };
@@ -90,7 +84,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           (event === "USER_UPDATED" || event === "TOKEN_REFRESHED") &&
           session?.user
         ) {
-          // SAFE: state sync only
           await loadUserData(session.user.id);
           return;
         }
@@ -106,7 +99,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       mounted = false;
       authListener?.subscription?.unsubscribe();
     };
-  }, [user?.id]); // Add user?.id as dependency
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, loading, setUser, refreshUser }}>
