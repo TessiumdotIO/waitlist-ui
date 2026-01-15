@@ -13,7 +13,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState(true);
 
   // Load user data from Supabase users table
-  const loadUserData = async (userId: string) => {
+  const loadUserData = async (userId: string): Promise<boolean> => {
     try {
       const { data, error } = await supabase
         .from("users")
@@ -23,9 +23,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (error && error.code !== "PGRST116") {
         console.error("Error loading user data:", error);
+        return false;
       }
 
-      if (data) return setUser(data);
+      if (data) {
+        setUser(data);
+        return true;
+      }
 
       // Fallback if user row missing
       console.warn("User row missing! Creating fallback user locally.");
@@ -41,9 +45,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         referral_count: 0,
         created_at: new Date().toISOString(),
       });
+      return true;
     } catch (err) {
       console.error("loadUserData exception:", err);
-      setUser(null);
+      return false;
     }
   };
 
@@ -61,6 +66,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           data: { session },
         } = await supabase.auth.getSession();
 
+        if (!mounted) return;
+
         if (session?.user) {
           await loadUserData(session.user.id);
 
@@ -68,7 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           const referralCode = new URLSearchParams(window.location.search).get(
             "ref"
           );
-          if (referralCode) {
+          if (referralCode && mounted) {
             try {
               await supabase.rpc("handle_referral", {
                 referral_code: referralCode,
@@ -85,7 +92,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         console.error("Session initialization error:", err);
         setUser(null);
       } finally {
-        if (mounted) setLoading(false); // ALWAYS stop loading
+        // CRITICAL: Always set loading to false, regardless of success/failure
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
@@ -93,6 +103,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!mounted) return;
+
         if (
           (event === "SIGNED_IN" ||
             event === "USER_UPDATED" ||
@@ -100,13 +112,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           session?.user
         ) {
           await loadUserData(session.user.id);
-          setLoading(false);
+          if (mounted) setLoading(false);
           return;
         }
 
         if (event === "SIGNED_OUT") {
           setUser(null);
-          setLoading(false);
+          if (mounted) setLoading(false);
         }
       }
     );
