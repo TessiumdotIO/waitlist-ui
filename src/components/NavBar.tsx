@@ -60,23 +60,6 @@ const NavBar: React.FC = () => {
           {/* <a href="#about" className="subtle-underline font-medium">About</a> */}
         </nav>
 
-        <div className="hidden md:flex items-center space-x-4">
-          {/* <Button
-						className="bg-primary/10 text-primary hover:bg-primary/20 disabled"
-						variant="ghost"
-						onClick={scrollToWaitlist}
-					>
-						Login
-					</Button> */}
-          <Button
-            variant="default"
-            onClick={scrollToWaitlist}
-            className="px-6 bg-accent"
-          >
-            Join The Waitlist
-          </Button>
-        </div>
-
         {/* Mobile menu button */}
         {/* <button
           className="md:hidden focus:outline-none"
@@ -153,13 +136,13 @@ const NavBar: React.FC = () => {
 						>
 							Login
 						</Button> */}
-            <Button
+            {/* <Button
               variant="default"
               className="w-full justify-center bg-accent"
               onClick={scrollToWaitlist}
             >
               Join The Waitlist
-            </Button>
+            </Button> */}
           </div>
         </div>
       </div>
