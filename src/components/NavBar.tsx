@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faXTwitter } from "@fortawesome/free-brands-svg-icons";
 
 const NavBar: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -76,7 +78,7 @@ const NavBar: React.FC = () => {
         </div>
 
         {/* Mobile menu button */}
-        <button
+        {/* <button
           className="md:hidden focus:outline-none"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label="Toggle menu"
@@ -101,7 +103,17 @@ const NavBar: React.FC = () => {
               )}
             />
           </div>
-        </button>
+        </button> */}
+        <a
+          href="https://twitter.com/Tessium_io"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <FontAwesomeIcon
+            icon={faXTwitter}
+            className="w-5 h-5 text-foreground/80"
+          />
+        </a>
       </div>
 
       {/* Mobile navigation */}
