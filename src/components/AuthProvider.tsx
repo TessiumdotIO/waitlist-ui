@@ -15,30 +15,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   // Load user data from Supabase users table
   const loadUserData = async (userId: string): Promise<boolean> => {
     try {
+      console.log("🔄 Loading user data for ID:", userId);
       const { data, error } = await supabase
         .from("users")
         .select("*")
         .eq("id", userId)
         .single();
 
+      console.log("📦 Database response:", { data, error });
+
       if (error && error.code !== "PGRST116") {
-        console.error("Error loading user data:", error);
+        console.error("❌ Error loading user data:", error);
         return false;
       }
 
       if (data) {
+        console.log("✅ User data found, setting user:", data);
         setUser(data);
         return true;
       }
 
       // Fallback if user row missing
-      console.warn("User row missing! Creating fallback user locally.");
+      console.warn("⚠️ User row missing! Creating fallback user locally.");
       setUser({
         id: userId,
         email: "",
         name: "Anonymous",
         points: 0,
-        base_rate: BASE_RATE,
+        base_rate: 0.1, // Start new users at 0.1 instead of 0
         twitter_connected: false,
         tasks_completed: [],
         referral_code: Math.random().toString(36).slice(2, 10).toUpperCase(),
@@ -47,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       });
       return true;
     } catch (err) {
-      console.error("loadUserData exception:", err);
+      console.error("💥 loadUserData exception:", err);
       return false;
     }
   };
@@ -62,14 +66,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const initSession = async () => {
       try {
+        console.log("🔍 Checking session...");
         const {
           data: { session },
         } = await supabase.auth.getSession();
 
+        console.log("📋 Session result:", session ? "Found" : "Not found");
+        console.log("👤 User ID:", session?.user?.id);
+
         if (!mounted) return;
 
         if (session?.user) {
-          await loadUserData(session.user.id);
+          console.log("✅ Session exists, loading user data...");
+          const success = await loadUserData(session.user.id);
+          console.log("📊 User data loaded:", success);
 
           // Handle referral code on first visit
           const referralCode = new URLSearchParams(window.location.search).get(
@@ -86,10 +96,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             }
           }
         } else {
+          console.log("❌ No session found, setting user to null");
           setUser(null);
         }
       } catch (err) {
-        console.error("Session initialization error:", err);
+        console.error("❗ Session initialization error:", err);
         setUser(null);
       }
     };
