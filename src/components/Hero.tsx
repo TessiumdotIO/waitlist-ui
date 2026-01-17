@@ -245,7 +245,7 @@ const Hero = () => {
       if (task.isShareQuest) {
         const referralLink = `waitlist.tessium.io?ref=${user.referral_code}`;
 
-        const tweetText = `The shift is coming 🌊\n\n@Tessium_io is building the AI-edutainment layer powering real onboarding.\n\nI just joined the limited waitlist - earning early points before launch.\n\nDon't snooze 👉 ${referralLink}\n\n#Tessium #Web3 #Crypto`;
+        const tweetText = `The shift is coming 🌊\n\n@Tessium_io is building the AI-edutainment layer powering real onboarding.\n\nI just joined the limited waitlist - earning early points before launch.\n\nDon't snooze 👉 ${referralLink}`;
 
         const encodedTweet = encodeURIComponent(tweetText);
         taskUrl = `https://x.com/intent/post?text=${encodedTweet}`;

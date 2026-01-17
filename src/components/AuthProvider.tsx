@@ -35,20 +35,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         return true;
       }
 
-      // Fallback if user row missing
-      console.warn("⚠️ User row missing! Creating fallback user locally.");
-      setUser({
+      const newUser = {
         id: userId,
-        email: "",
-        name: "Anonymous",
         points: 0,
-        base_rate: 0.1, // Start new users at 0.1 instead of 0
+        base_rate: 0.1,
         twitter_connected: false,
         tasks_completed: [],
         referral_code: Math.random().toString(36).slice(2, 10).toUpperCase(),
-        referral_count: 0,
-        created_at: new Date().toISOString(),
-      });
+      };
+
+      const { data: insertedUser, error: insertError } = await supabase
+        .from("users")
+        .insert(newUser)
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error("❌ Failed to create user row:", insertError);
+        return false;
+      }
+
+      setUser(insertedUser);
       return true;
     } catch (err) {
       console.error("💥 loadUserData exception:", err);
