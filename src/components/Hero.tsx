@@ -122,16 +122,20 @@ const Hero = () => {
   const baseRate = user?.base_rate;
 
   useEffect(() => {
-    if (points == null || baseRate == null) return;
+    if (points == null || baseRate == null) {
+      setDisplayPoints(0);
+      return;
+    }
 
-    setDisplayPoints(points); 
+    setDisplayPoints(points);
 
     const start = Date.now();
     const basePoints = points;
 
     const interval = setInterval(() => {
       const elapsed = (Date.now() - start) / 1000;
-      setDisplayPoints(basePoints + elapsed * baseRate);
+      const newPoints = basePoints + elapsed * baseRate;
+      setDisplayPoints(newPoints);
     }, 100);
 
     return () => clearInterval(interval);
@@ -147,8 +151,6 @@ const Hero = () => {
           .select("*")
           .order("points", { ascending: false });
 
-        console.log(data);
-
         if (data) {
           setLeaderboard(data);
 
@@ -160,7 +162,6 @@ const Hero = () => {
               referralCounts.set(u.referred_by, count + 1);
             }
           });
-          console.log("Referral counts:", referralCounts);
 
           // Create sorted referral leaderboard
           const referralLB: User[] = data
@@ -172,11 +173,12 @@ const Hero = () => {
 
           setReferralLeaderboard(referralLB);
 
+          // Calculate user position based on active leaderboard
           if (activeLeaderboard === "points") {
-            const position = data.findIndex((u) => u.id === user?.id);
+            const position = data.findIndex((u) => u.id === user.id);
             setUserPosition(position !== -1 ? position + 1 : null);
           } else if (activeLeaderboard === "referrals") {
-            const position = referralLB.findIndex((u) => u.id === user?.id);
+            const position = referralLB.findIndex((u) => u.id === user.id);
             setUserPosition(position !== -1 ? position + 1 : null);
           }
         }
@@ -204,7 +206,7 @@ const Hero = () => {
       channel.unsubscribe();
       clearInterval(interval);
     };
-  }, [user?.id, user, activeLeaderboard]);
+  }, [user?.id, activeLeaderboard, user]);
 
   const handleTwitterConnect = async () => {
     if (!user || user.twitter_connected) return;
@@ -398,34 +400,43 @@ const Hero = () => {
     (u, idx) => ({ ...u, globalRank: idx + 1 })
   );
 
-  let pointsDisplay: (User & { globalRank: number })[] = pointsWithRank.slice(
-    0,
-    15
-  );
+  let pointsDisplay: (User & { globalRank: number })[] = [];
 
   if (user) {
     const userEntry = pointsWithRank.find((u) => u.id === user.id);
-    const userInTop = pointsDisplay.some((u) => u.id === user.id);
+    const userInTop15 = pointsWithRank
+      .slice(0, 15)
+      .some((u) => u.id === user.id);
 
-    if (userEntry && !userInTop) {
-      // Put the current user at the top, then include the top 14 others
-      pointsDisplay = [userEntry, ...pointsWithRank.slice(0, 14)];
+    if (userEntry && !userInTop15) {
+      // Show user at top with their real rank, then top 15
+      pointsDisplay = [userEntry, ...pointsWithRank.slice(0, 15)];
+    } else {
+      // User is in top 15 or doesn't exist, just show top 15
+      pointsDisplay = pointsWithRank.slice(0, 15);
     }
+  } else {
+    pointsDisplay = pointsWithRank.slice(0, 15);
   }
 
   const referralsWithRank: (User & { globalRank: number })[] =
     referralLeaderboard.map((u, idx) => ({ ...u, globalRank: idx + 1 }));
 
-  let referralsDisplay: (User & { globalRank: number })[] =
-    referralsWithRank.slice(0, 15);
+  let referralsDisplay: (User & { globalRank: number })[] = [];
 
   if (user) {
     const userEntry = referralsWithRank.find((u) => u.id === user.id);
-    const userInTop = referralsDisplay.some((u) => u.id === user.id);
+    const userInTop15 = referralsWithRank
+      .slice(0, 15)
+      .some((u) => u.id === user.id);
 
-    if (userEntry && !userInTop) {
-      referralsDisplay = [userEntry, ...referralsWithRank.slice(0, 14)];
+    if (userEntry && !userInTop15) {
+      referralsDisplay = [userEntry, ...referralsWithRank.slice(0, 15)];
+    } else {
+      referralsDisplay = referralsWithRank.slice(0, 15);
     }
+  } else {
+    referralsDisplay = referralsWithRank.slice(0, 15);
   }
 
   return (
