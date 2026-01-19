@@ -81,6 +81,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     let mounted = true;
 
+    // Replace the initSession function in AuthProvider.tsx
+
     const initSession = async () => {
       try {
         console.log("🔍 Checking session...");
@@ -89,16 +91,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         } = await supabase.auth.getSession();
 
         console.log("📋 Session result:", session ? "Found" : "Not found");
-        console.log("👤 User ID:", session?.user?.id);
 
         if (!mounted) return;
 
         if (session?.user) {
           console.log("✅ Session exists, loading user data...");
-          const success = await loadUserData(session.user.id);
-          console.log("📊 User data loaded:", success);
 
-          // Handle referral code on first visit
+          // Get referral code from URL before loading user
           const referralCode = new URLSearchParams(window.location.search).get(
             "ref"
           );
@@ -106,13 +105,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             `referral_applied_${session.user.id}`
           );
 
-          if (referralCode && !hasAppliedReferral) {
-            await supabase.rpc("handle_referral", {
-              referral_code: referralCode,
-              new_user_id: session.user.id,
-            });
+          const success = await loadUserData(session.user.id);
+          console.log("📊 User data loaded:", success);
 
-            localStorage.setItem(`referral_applied_${session.user.id}`, "true");
+          // Handle referral AFTER user is loaded
+          if (success && referralCode && !hasAppliedReferral) {
+            console.log("🎁 Applying referral code:", referralCode);
+
+            try {
+              const { data, error } = await supabase.rpc("handle_referral", {
+                referral_code: referralCode,
+                new_user_id: session.user.id,
+              });
+
+              if (error) {
+                console.error("❌ Referral error:", error);
+              } else {
+                console.log("✅ Referral applied successfully");
+                localStorage.setItem(
+                  `referral_applied_${session.user.id}`,
+                  "true"
+                );
+
+                // Reload user data to get updated values
+                await loadUserData(session.user.id);
+              }
+            } catch (err) {
+              console.error("💥 Referral exception:", err);
+            }
           }
         } else {
           console.log("❌ No session found, setting user to null");
