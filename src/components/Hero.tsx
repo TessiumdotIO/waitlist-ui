@@ -118,28 +118,31 @@ const Hero = () => {
   //   return () => clearInterval(interval);
   // }, [user?.id]);
 
-  const points = user?.points;
-  const baseRate = user?.base_rate;
-
   useEffect(() => {
-    if (points == null || baseRate == null) {
-      setDisplayPoints(0);
-      return;
-    }
-
-    setDisplayPoints(points);
+    if (!user?.id) return;
 
     const start = Date.now();
-    const basePoints = points;
+    const basePoints = user.points;
+    const baseRate = user.base_rate;
 
-    const interval = setInterval(() => {
+    const interval = setInterval(async () => {
       const elapsed = (Date.now() - start) / 1000;
       const newPoints = basePoints + elapsed * baseRate;
       setDisplayPoints(newPoints);
-    }, 100);
+
+      // Save back to DB every 5 seconds
+      try {
+        await supabase
+          .from("users")
+          .update({ points: newPoints })
+          .eq("id", user.id);
+      } catch (err) {
+        console.error("Error updating points in DB:", err);
+      }
+    }, 5000);
 
     return () => clearInterval(interval);
-  }, [points, baseRate]);
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
