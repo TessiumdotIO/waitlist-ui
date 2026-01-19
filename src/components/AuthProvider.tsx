@@ -26,7 +26,72 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (error) {
         if (error.code === "PGRST116") {
-          // user does not exist — allow creation below
+          // User does not exist — create new user in DB
+          const {
+            data: { session: currentSession },
+          } = await supabase.auth.getSession();
+
+          const newUser = {
+            id: userId,
+            points: 0,
+            base_rate: 0.1,
+            twitter_connected: false,
+            tasks_completed: [],
+            referral_code: Math.random()
+              .toString(36)
+              .slice(2, 10)
+              .toUpperCase(),
+            avatar_url: currentSession?.user?.user_metadata?.avatar_url || "",
+          };
+
+          const { data: insertedUser, error: insertError } = await supabase
+            .from("users")
+            .insert(newUser)
+            .select()
+            .single();
+
+          if (insertError) {
+            console.error("❌ Failed to create user row:", insertError);
+            return false;
+          }
+
+          setUser(insertedUser);
+
+          // Check URL for referral
+          const referralCode = new URLSearchParams(window.location.search).get(
+            "ref"
+          );
+          const hasAppliedReferral = localStorage.getItem(
+            `referral_applied_${userId}`
+          );
+
+          if (referralCode && !hasAppliedReferral) {
+            try {
+              const { data, error } = await supabase.rpc("handle_referral", {
+                referral_code: referralCode,
+                new_user_id: userId,
+              });
+
+              if (!error) {
+                console.log("✅ Referral bonus applied!");
+                localStorage.setItem(`referral_applied_${userId}`, "true");
+
+                // Refresh user to get updated points/base_rate
+                const { data: refreshedUser } = await supabase
+                  .from("users")
+                  .select("*")
+                  .eq("id", userId)
+                  .single();
+                setUser(refreshedUser);
+              } else {
+                console.error("❌ Referral error:", error);
+              }
+            } catch (err) {
+              console.error("💥 Referral exception:", err);
+            }
+          }
+
+          return true;
         } else {
           console.error("Error loading user data:", error);
           return false;
