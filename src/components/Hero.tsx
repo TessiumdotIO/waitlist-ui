@@ -124,6 +124,8 @@ const Hero = () => {
   useEffect(() => {
     if (points == null || baseRate == null) return;
 
+    setDisplayPoints(points); 
+
     const start = Date.now();
     const basePoints = points;
 

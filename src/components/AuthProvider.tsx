@@ -24,13 +24,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       console.log("📦 Database response:", { data, error });
 
-      if (error && error.code !== "PGRST116") {
-        console.error("❌ Error loading user data:", error);
-        return false;
+      if (error) {
+        if (error.code === "PGRST116") {
+          // user does not exist — allow creation below
+        } else {
+          console.error("Error loading user data:", error);
+          return false;
+        }
       }
 
       if (data) {
-        console.log("✅ User data found, setting user:", data);
+        console.log("User data found, setting user:", data);
         setUser(data);
         return true;
       }
@@ -98,15 +102,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           const referralCode = new URLSearchParams(window.location.search).get(
             "ref"
           );
-          if (referralCode && mounted) {
-            try {
-              await supabase.rpc("handle_referral", {
-                referral_code: referralCode,
-                new_user_id: session.user.id,
-              });
-            } catch (err) {
-              console.warn("Referral RPC failed:", err);
-            }
+          const hasAppliedReferral = localStorage.getItem(
+            `referral_applied_${session.user.id}`
+          );
+
+          if (referralCode && !hasAppliedReferral) {
+            await supabase.rpc("handle_referral", {
+              referral_code: referralCode,
+              new_user_id: session.user.id,
+            });
+
+            localStorage.setItem(`referral_applied_${session.user.id}`, "true");
           }
         } else {
           console.log("❌ No session found, setting user to null");
