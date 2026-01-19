@@ -35,6 +35,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         return true;
       }
 
+      // attempt to get the current session to extract user metadata (avatar), fallback to empty string
+      const {
+        data: { session: currentSession },
+      } = await supabase.auth.getSession();
+
       const newUser = {
         id: userId,
         points: 0,
@@ -42,6 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         twitter_connected: false,
         tasks_completed: [],
         referral_code: Math.random().toString(36).slice(2, 10).toUpperCase(),
+        avatar_url: currentSession?.user?.user_metadata?.avatar_url || "",
       };
 
       const { data: insertedUser, error: insertError } = await supabase
