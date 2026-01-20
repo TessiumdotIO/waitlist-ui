@@ -1,13 +1,16 @@
-// components/AuthProvider.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { AuthContext } from "./AuthContext";
-import { generateDisplayName } from "@/lib/nameGenerator";
+import { AuthContext } from "./AuthContext"; // ✅ import the single AuthContext
 import { User } from "./types";
+import { generateDisplayName } from "@/lib/nameGenerator";
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+interface Props {
+  children: ReactNode;
+}
+
+export const AuthProvider = ({ children }: Props) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -45,6 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           display_name: generateDisplayName(authUser.id),
           avatar_url: authUser.user_metadata.avatar_url,
           referral_code: Math.random().toString(36).slice(2, 10).toUpperCase(),
+          points_rate: 0.1, // start points/sec
         });
       }
 
@@ -71,15 +75,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, []);
 
+  const refresh = async () => {
+    if (user) await hydrateUser(user.id);
+  };
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        refresh: async () => user && hydrateUser(user.id),
-      }}
-    >
+    <AuthContext.Provider value={{ user, setUser, loading, refresh }}>
       {children}
     </AuthContext.Provider>
   );
-}
+};

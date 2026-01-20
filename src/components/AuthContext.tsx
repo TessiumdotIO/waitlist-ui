@@ -1,19 +1,20 @@
-// components/AuthContext.tsx
-"use client";
-
 import { createContext, useContext } from "react";
-import type { User } from "./types";
+import { User } from "./types";
 
-export type AuthContextType = {
+export interface AuthContextType {
   user: User | null;
+  setUser: (user: User | null) => void;
   loading: boolean;
   refresh: () => Promise<void>;
+}
+
+// ✅ Only create context here, once
+export const AuthContext = createContext<AuthContextType | undefined>(
+  undefined
+);
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) throw new Error("useAuth must be used within AuthProvider");
+  return context;
 };
-
-export const AuthContext = createContext<AuthContextType>({
-  user: null,
-  loading: true,
-  refresh: async () => {},
-});
-
-export const useAuth = () => useContext(AuthContext);

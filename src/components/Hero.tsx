@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/components/AuthContext";
 import {
   BASE_RATE,
   REFERRAL_BONUS,
@@ -24,13 +23,14 @@ import {
 import { ShootingStar, TwitterTask, User } from "./types";
 import { generateDisplayName } from "@/lib/nameGenerator";
 import { usePointsTicker } from "@/hooks/usePointsTicker";
+import { useAuth } from "./AuthContext";
 
 const Hero = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const heroRef = useRef<HTMLDivElement>(null);
   const cursorRef = useRef<HTMLDivElement>(null);
   const [showModal, setShowModal] = useState(false);
-  const { user, loading, refresh } = useAuth();
+  const { user, loading, refresh, setUser } = useAuth();
   // const [displayPoints, setDisplayPoints] = useState(0);
   const [leaderboard, setLeaderboard] = useState<User[]>([]);
   const [referralLeaderboard, setReferralLeaderboard] = useState<User[]>([]);
@@ -85,7 +85,10 @@ const Hero = () => {
     }
   };
 
-  const displayPoints = usePointsTicker(user?.points, user?.points_rate);
+  const displayPoints = usePointsTicker(
+    user?.points ?? 0,
+    user?.points_rate ?? 0.1
+  );
 
   // useEffect(() => {
   //   if (!user) return;
@@ -172,29 +175,37 @@ const Hero = () => {
   }, [user, activeLeaderboard]);
 
   const handleTaskClick = async (task: TwitterTask) => {
-    if (!user) return;
+    if (!user || (user.tasks_completed ?? []).includes(task.id)) return;
 
     let taskUrl = task.url;
 
     if (task.type === "twitter_share" && task.tweet_template) {
       const referralLink = `https://waitlist.tessium.io?ref=${user.referral_code}`;
-
       const tweetText = task.tweet_template.replace(
         "{{REFERRAL_URL}}",
         referralLink
       );
-
       taskUrl = `${task.url}?text=${encodeURIComponent(tweetText)}`;
     }
 
     window.open(taskUrl, "_blank", "width=600,height=700");
 
+    // Update local user immediately
+    const updatedTasks = [...(user.tasks_completed ?? []), task.id];
+    const updatedRate =
+      (user.points_rate ?? 0.1) + (TASK_REWARD_RATES[task.id] ?? 0);
+    setUser({
+      ...user,
+      tasks_completed: updatedTasks,
+      points_rate: updatedRate,
+    });
+
+    // Persist on Supabase
     await supabase.rpc("complete_task", {
       p_user_id: user.id,
       p_task_id: task.id,
     });
-
-    await refresh();
+    await refresh(); // optional but keeps backend and frontend in sync
   };
 
   const copyReferralLink = () => {
