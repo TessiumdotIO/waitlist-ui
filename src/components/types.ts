@@ -4,7 +4,7 @@ export interface User {
   name?: string;
   avatar_url?: string;
   points: number;
-  base_rate: number;
+  points_rate: number;
   twitter_connected: boolean;
   twitter_username?: string;
   twitter_avatar?: string;
@@ -17,13 +17,14 @@ export interface User {
   last_update?: string;
 }
 
-export interface TwitterTask {
+export type TwitterTask = {
   id: string;
   name: string;
   url: string;
-  reward: number;
+  type: string;
   isShareQuest: boolean;
-}
+  tweet_template?: string | null;
+};
 
 export interface Star {
   x: number;

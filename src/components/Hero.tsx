@@ -23,14 +23,15 @@ import {
 } from "@/lib/heroUtils";
 import { ShootingStar, TwitterTask, User } from "./types";
 import { generateDisplayName } from "@/lib/nameGenerator";
+import { usePointsTicker } from "@/hooks/usePointsTicker";
 
 const Hero = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const heroRef = useRef<HTMLDivElement>(null);
   const cursorRef = useRef<HTMLDivElement>(null);
   const [showModal, setShowModal] = useState(false);
-  const { user, setUser, loading, refreshUser } = useAuth();
-  const [displayPoints, setDisplayPoints] = useState(0);
+  const { user, loading, refresh } = useAuth();
+  // const [displayPoints, setDisplayPoints] = useState(0);
   const [leaderboard, setLeaderboard] = useState<User[]>([]);
   const [referralLeaderboard, setReferralLeaderboard] = useState<User[]>([]);
   const [userPosition, setUserPosition] = useState<number | null>(null);
@@ -42,6 +43,15 @@ const Hero = () => {
   const [activeLeaderboard, setActiveLeaderboard] = useState<
     "points" | "referrals"
   >("points");
+
+  const TASK_REWARD_RATES: Record<string, number> = {
+    follow_main: 0.2,
+    share_on_twitter: 0.3,
+    join_telegram: 0.3,
+    join_discord: 0.15,
+    youtube_subscribe: 0.1,
+    tiktok_follow: 0.1,
+  };
 
   const handleGoogleSignIn = async () => {
     setAuthLoading(true);
@@ -75,45 +85,47 @@ const Hero = () => {
     }
   };
 
-  useEffect(() => {
-    if (!user) return;
+  const displayPoints = usePointsTicker(user.points, user.points_rate);
 
-    let startTime = Date.now();
-    let lastSaveTime = Date.now();
-    let basePoints = user.points;
-    const baseRate = user.base_rate;
+  // useEffect(() => {
+  //   if (!user) return;
 
-    const interval = setInterval(async () => {
-      const now = Date.now();
-      const elapsedMs = now - startTime;
-      const newPoints = basePoints + (elapsedMs / 1000) * baseRate;
-      setDisplayPoints(newPoints);
+  //   let startTime = Date.now();
+  //   let lastSaveTime = Date.now();
+  //   let basePoints = user.points;
+  //   const baseRate = user.base_rate;
 
-      if (now - lastSaveTime >= 5000) {
-        try {
-          const { error } = await supabase
-            .from("users")
-            .update({
-              points: newPoints,
-              last_update: new Date().toISOString(),
-            })
-            .eq("id", user.id);
-          if (!error) {
-            basePoints = newPoints;
-            startTime = now;
-            lastSaveTime = now;
-            setUser((prev) => (prev ? { ...prev, points: newPoints } : null));
-          }
-        } catch (err) {
-          console.error("Save points error:", err);
-        }
-      }
-    }, 100); // Smooth update
+  //   const interval = setInterval(async () => {
+  //     const now = Date.now();
+  //     const elapsedMs = now - startTime;
+  //     const newPoints = basePoints + (elapsedMs / 1000) * baseRate;
+  //     setDisplayPoints(newPoints);
 
-    return () => {
-      clearInterval(interval);
-    };
-  }, [user, setUser]);
+  //     if (now - lastSaveTime >= 5000) {
+  //       try {
+  //         const { error } = await supabase
+  //           .from("users")
+  //           .update({
+  //             points: newPoints,
+  //             last_update: new Date().toISOString(),
+  //           })
+  //           .eq("id", user.id);
+  //         if (!error) {
+  //           basePoints = newPoints;
+  //           startTime = now;
+  //           lastSaveTime = now;
+  //           setUser((prev) => (prev ? { ...prev, points: newPoints } : null));
+  //         }
+  //       } catch (err) {
+  //         console.error("Save points error:", err);
+  //       }
+  //     }
+  //   }, 100);
+
+  //   return () => {
+  //     clearInterval(interval);
+  //   };
+  // }, [user, setUser]);
 
   useEffect(() => {
     if (!user) return;
@@ -160,30 +172,29 @@ const Hero = () => {
   }, [user, activeLeaderboard]);
 
   const handleTaskClick = async (task: TwitterTask) => {
-    if (!user || user.tasks_completed.includes(task.id)) return;
+    if (!user) return;
 
     let taskUrl = task.url;
-    if (task.isShareQuest) {
-      const referralLink = `${window.location.origin}?ref=${user.referral_code}`;
-      const tweetText = `The shift is coming 🌊\n\n@Tessium_io is building the AI-edutainment layer powering real onboarding.\n\nI just joined the limited waitlist - earning early points before launch.\n\nDon't snooze 👉 ${referralLink}`;
-      taskUrl = `https://x.com/intent/post?text=${encodeURIComponent(
-        tweetText
-      )}`;
+
+    if (task.type === "twitter_share" && task.tweet_template) {
+      const referralLink = `https://waitlist.tessium.io?ref=${user.referral_code}`;
+
+      const tweetText = task.tweet_template.replace(
+        "{{REFERRAL_URL}}",
+        referralLink
+      );
+
+      taskUrl = `${task.url}?text=${encodeURIComponent(tweetText)}`;
     }
 
     window.open(taskUrl, "_blank", "width=600,height=700");
 
-    const updatedTasks = [...user.tasks_completed, task.id];
-    const updatedRate = user.base_rate + task.reward;
-    setUser({ ...user, tasks_completed: updatedTasks, base_rate: updatedRate });
-
-    const { error } = await supabase.rpc("complete_task", {
+    await supabase.rpc("complete_task", {
       p_user_id: user.id,
       p_task_id: task.id,
-      p_reward: task.reward,
     });
-    if (error) console.error("Task complete error:", error);
-    else refreshUser();
+
+    await refresh();
   };
 
   const copyReferralLink = () => {
@@ -330,7 +341,7 @@ const Hero = () => {
               {displayPoints.toFixed(2)} points
             </h1>
             <p className="text-center mt-2">
-              {user.base_rate.toFixed(2)} pts/sec
+              {user.points_rate.toFixed(2)} pts/sec
             </p>
             <p className="md:px-24 px-4 text-center my-7">
               You're #{userPosition?.toLocaleString() || "..."} on the waitlist
@@ -584,7 +595,7 @@ const Hero = () => {
                             <Check size={20} className="text-xs text-white" />
                           ) : (
                             <span className="bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm">
-                              +{task.reward}/sec
+                              +{TASK_REWARD_RATES[task.id]}/sec
                             </span>
                           )}
                         </button>

@@ -1,23 +1,19 @@
+// components/AuthContext.tsx
 "use client";
 
 import { createContext, useContext } from "react";
-import { User as AppUser } from "./types"; // Adjust path as needed
+import type { User } from "./types";
 
-type AuthContextType = {
-  user: AppUser | null;
+export type AuthContextType = {
+  user: User | null;
   loading: boolean;
-  // allow setState-style updater (functional updates) for convenience
-  setUser: React.Dispatch<React.SetStateAction<AppUser | null>>;
-  refreshUser: () => Promise<void>;
+  refresh: () => Promise<void>;
 };
 
 export const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
-  // default no-op until provider overrides
-  // cast to satisfy the dispatch signature
-  setUser: (() => {}) as React.Dispatch<React.SetStateAction<AppUser | null>>,
-  refreshUser: async () => {},
+  refresh: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
