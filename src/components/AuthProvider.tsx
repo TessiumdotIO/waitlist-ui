@@ -2,7 +2,7 @@
 
 import { ReactNode, useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { AuthContext } from "./AuthContext";
+import { AuthContext } from "./AuthContext"; // ✅ import the single AuthContext
 import { User } from "./types";
 import { generateDisplayName } from "@/lib/nameGenerator";
 
@@ -15,7 +15,6 @@ export const AuthProvider = ({ children }: Props) => {
   const [loading, setLoading] = useState(true);
 
   const hydrateUser = async (id: string) => {
-    // Optional: call RPC to sync points
     await supabase.rpc("sync_points", { p_user_id: id });
 
     const { data } = await supabase
@@ -37,7 +36,6 @@ export const AuthProvider = ({ children }: Props) => {
         return;
       }
 
-      // Check if user exists
       const { data: dbUser } = await supabase
         .from("users")
         .select("id")
@@ -45,19 +43,17 @@ export const AuthProvider = ({ children }: Props) => {
         .single();
 
       if (!dbUser) {
-        // Insert new user with default points_rate = 0.1
         await supabase.from("users").insert({
           id: authUser.id,
           display_name: generateDisplayName(authUser.id),
           avatar_url: authUser.user_metadata.avatar_url,
           referral_code: Math.random().toString(36).slice(2, 10).toUpperCase(),
-          points_rate: 0.1, // default points/sec
+          points_rate: 0.1, // start points/sec
         });
       }
 
       await hydrateUser(authUser.id);
 
-      // Handle referral if exists
       const ref = new URLSearchParams(window.location.search).get("ref");
       if (ref) {
         await supabase.rpc("handle_referral", {
@@ -71,7 +67,6 @@ export const AuthProvider = ({ children }: Props) => {
 
     init();
 
-    // Subscribe to auth changes
     const { data: sub } = supabase.auth.onAuthStateChange((_, session) => {
       if (!session) setUser(null);
       else hydrateUser(session.user.id);

@@ -5,8 +5,8 @@ import Features from "@/components/Features";
 import HowItWorks from "@/components/HowItWorks";
 import WaitlistForm from "@/components/WaitlistForm";
 import Footer from "@/components/Footer";
-import { useAuth } from "../components/authHelpers";
 import { AuthProvider } from "@/components/AuthProvider";
+import { useAuth } from "@/components/AuthContext";
 
 const PageContent: React.FC = () => {
   const { user } = useAuth();

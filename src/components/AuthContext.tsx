@@ -8,7 +8,13 @@ export interface AuthContextType {
   refresh: () => Promise<void>;
 }
 
-// Only create the context here
+// ✅ Only create context here, once
 export const AuthContext = createContext<AuthContextType | undefined>(
   undefined
 );
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) throw new Error("useAuth must be used within AuthProvider");
+  return context;
+};

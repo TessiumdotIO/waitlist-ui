@@ -23,7 +23,7 @@ import {
 import { ShootingStar, TwitterTask, User } from "./types";
 import { generateDisplayName } from "@/lib/nameGenerator";
 import { usePointsTicker } from "@/hooks/usePointsTicker";
-import { useAuth } from "./authHelpers";
+import { useAuth } from "./AuthContext";
 
 const Hero = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
