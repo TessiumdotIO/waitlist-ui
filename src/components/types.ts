@@ -24,6 +24,7 @@ export type TwitterTask = {
   type: string;
   isShareQuest: boolean;
   tweet_template?: string | null;
+  reward: number;
 };
 
 export interface Star {

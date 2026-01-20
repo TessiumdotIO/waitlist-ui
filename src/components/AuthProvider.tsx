@@ -75,6 +75,31 @@ export const AuthProvider = ({ children }: Props) => {
     return () => sub.subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (!user) return;
+
+    // Subscribe to changes for the logged-in user's row
+    const channel = supabase
+      .channel(`user-updates-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "users",
+          filter: `id=eq.${user.id}`, // only updates for this user
+        },
+        (payload) => {
+          setUser(payload.new as User); // update frontend state immediately
+        }
+      )
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [user?.id, user]);
+
   const refresh = async () => {
     if (user) await hydrateUser(user.id);
   };

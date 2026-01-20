@@ -72,16 +72,20 @@ const Hero = () => {
   };
 
   const handleTwitterConnect = async () => {
-    if (!user || user.twitter_connected) return;
+    if (!user) return;
+
     try {
-      const { error } = await supabase.auth.updateUser({
-        data: { provider: "twitter" }, // Triggers link if not linked
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "twitter",
+        options: {
+          redirectTo: window.location.href, // stay on the same page after auth
+        },
       });
+
       if (error) throw error;
-      // Auth state change will handle update
-    } catch (error) {
-      console.error("Twitter connect error:", error);
-      alert("Failed to connect Twitter.");
+    } catch (err) {
+      console.error("Twitter connect error:", err);
+      alert("Failed to connect X account");
     }
   };
 
@@ -175,7 +179,7 @@ const Hero = () => {
   }, [user, activeLeaderboard]);
 
   const handleTaskClick = async (task: TwitterTask) => {
-    if (!user || (user.tasks_completed ?? []).includes(task.id)) return;
+    if (!user) return;
 
     let taskUrl = task.url;
 
@@ -190,22 +194,20 @@ const Hero = () => {
 
     window.open(taskUrl, "_blank", "width=600,height=700");
 
-    // Update local user immediately
+    // Add points_rate for the task immediately in frontend (optimistic update)
+    const updatedRate = (user.points_rate ?? 0.1) + (task.reward ?? 0);
     const updatedTasks = [...(user.tasks_completed ?? []), task.id];
-    const updatedRate =
-      (user.points_rate ?? 0.1) + (TASK_REWARD_RATES[task.id] ?? 0);
     setUser({
       ...user,
       tasks_completed: updatedTasks,
       points_rate: updatedRate,
     });
 
-    // Persist on Supabase
+    // Then call the RPC to record completion in the backend
     await supabase.rpc("complete_task", {
       p_user_id: user.id,
       p_task_id: task.id,
     });
-    await refresh(); // optional but keeps backend and frontend in sync
   };
 
   const copyReferralLink = () => {
