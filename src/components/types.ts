@@ -1,7 +1,7 @@
 export interface User {
   id: string;
-  email: string;
-  name: string;
+  email?: string;
+  name?: string;
   avatar_url?: string;
   points: number;
   base_rate: number;
@@ -14,14 +14,15 @@ export interface User {
   referred_by?: string;
   created_at: string;
   display_name?: string;
+  last_update?: string;
 }
 
 export interface TwitterTask {
   id: string;
   name: string;
-  reward: number;
   url: string;
-  isShareQuest?: boolean;
+  reward: number;
+  isShareQuest: boolean;
 }
 
 export interface Star {
