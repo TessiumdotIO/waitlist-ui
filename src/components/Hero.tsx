@@ -85,7 +85,7 @@ const Hero = () => {
     }
   };
 
-  const displayPoints = usePointsTicker(user.points, user.points_rate);
+  const displayPoints = usePointsTicker(user?.points, user?.points_rate);
 
   // useEffect(() => {
   //   if (!user) return;
