@@ -1,240 +1,187 @@
+// AuthProvider.tsx (updated to set display_name on create)
 "use client";
 
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { User as AppUser } from "./types";
 import { AuthContext } from "./AuthContext";
-import { BASE_RATE, REFERRAL_BONUS } from "@/lib/heroUtils";
+import {
+  BASE_RATE,
+  REFERRAL_BONUS,
+  TWITTER_CONNECT_REWARD,
+} from "@/lib/heroUtils";
+import { generateDisplayName } from "@/lib/nameGenerator";
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [user, setUser] = useState<AppUser | null>(null);
-  const [loading, setLoading] = useState(false); // Set to false by default
+  const [loading, setLoading] = useState(false);
 
-  // Load user data from Supabase users table
   const loadUserData = async (userId: string): Promise<boolean> => {
     try {
-      console.log("🔄 Loading user data for ID:", userId);
-      const { data, error } = await supabase
+      const { data: dbUser, error } = await supabase
         .from("users")
         .select("*")
         .eq("id", userId)
         .single();
 
-      console.log("📦 Database response:", { data, error });
+      if (error) throw error;
 
-      if (error) {
-        if (error.code === "PGRST116") {
-          // User does not exist — create new user in DB
-          const {
-            data: { session: currentSession },
-          } = await supabase.auth.getSession();
+      if (!dbUser) {
+        // Create new user
+        const {
+          data: { user: authUser },
+        } = await supabase.auth.getUser();
+        const displayName = generateDisplayName(userId);
+        const newUser = {
+          id: userId,
+          points: 0,
+          base_rate: BASE_RATE,
+          twitter_connected: false,
+          tasks_completed: [],
+          referral_code: Math.random().toString(36).slice(2, 10).toUpperCase(),
+          avatar_url: authUser?.user_metadata?.avatar_url || "",
+          referral_count: 0,
+          last_update: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          display_name: displayName,
+        };
 
-          const newUser = {
-            id: userId,
-            points: 0,
-            base_rate: 0.1,
-            twitter_connected: false,
-            tasks_completed: [],
-            referral_code: Math.random()
-              .toString(36)
-              .slice(2, 10)
-              .toUpperCase(),
-            avatar_url: currentSession?.user?.user_metadata?.avatar_url || "",
-          };
+        const { data: inserted, error: insertErr } = await supabase
+          .from("users")
+          .insert(newUser)
+          .select()
+          .single();
 
-          const { data: insertedUser, error: insertError } = await supabase
-            .from("users")
-            .insert(newUser)
-            .select()
-            .single();
+        if (insertErr) throw insertErr;
 
-          if (insertError) {
-            console.error("❌ Failed to create user row:", insertError);
-            return false;
-          }
-
-          setUser(insertedUser);
-
-          // Check URL for referral
-          const referralCode = new URLSearchParams(window.location.search).get(
-            "ref"
-          );
-          const hasAppliedReferral = localStorage.getItem(
-            `referral_applied_${userId}`
-          );
-
-          if (referralCode && !hasAppliedReferral) {
-            try {
-              const { data, error } = await supabase.rpc("handle_referral", {
-                referral_code: referralCode,
-                new_user_id: userId,
-              });
-
-              if (!error) {
-                console.log("✅ Referral bonus applied!");
-                localStorage.setItem(`referral_applied_${userId}`, "true");
-
-                // Refresh user to get updated points/base_rate
-                const { data: refreshedUser } = await supabase
-                  .from("users")
-                  .select("*")
-                  .eq("id", userId)
-                  .single();
-                setUser(refreshedUser);
-              } else {
-                console.error("❌ Referral error:", error);
-              }
-            } catch (err) {
-              console.error("💥 Referral exception:", err);
-            }
-          }
-
-          return true;
-        } else {
-          console.error("Error loading user data:", error);
-          return false;
-        }
-      }
-
-      if (data) {
-        console.log("User data found, setting user:", data);
-        setUser(data);
+        setUser(inserted);
         return true;
       }
 
-      // attempt to get the current session to extract user metadata (avatar), fallback to empty string
-      const {
-        data: { session: currentSession },
-      } = await supabase.auth.getSession();
-
-      const newUser = {
-        id: userId,
-        points: 0,
-        base_rate: 0.1,
-        twitter_connected: false,
-        tasks_completed: [],
-        referral_code: Math.random().toString(36).slice(2, 10).toUpperCase(),
-        avatar_url: currentSession?.user?.user_metadata?.avatar_url || "",
-      };
-
-      const { data: insertedUser, error: insertError } = await supabase
-        .from("users")
-        .insert(newUser)
-        .select()
-        .single();
-
-      if (insertError) {
-        console.error("❌ Failed to create user row:", insertError);
-        return false;
+      // Calculate accumulated points if last_update exists
+      let points = dbUser.points;
+      if (dbUser.last_update) {
+        const lastUpdate = Date.parse(dbUser.last_update);
+        if (!isNaN(lastUpdate)) {
+          const elapsed = (Date.now() - lastUpdate) / 1000;
+          points += elapsed * dbUser.base_rate;
+        }
       }
 
-      setUser(insertedUser);
+      // Update DB with new points and current timestamp
+      const now = new Date().toISOString();
+      const { error: updateErr } = await supabase
+        .from("users")
+        .update({ points, last_update: now })
+        .eq("id", userId);
+
+      if (updateErr) throw updateErr;
+
+      // Check for Twitter connection
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser();
+      const hasTwitter = authUser?.identities?.some(
+        (i) => i.provider === "twitter"
+      );
+      let twitterUsername = dbUser.twitter_username;
+      let baseRate = dbUser.base_rate;
+      let twitterConnected = dbUser.twitter_connected;
+
+      if (hasTwitter && !dbUser.twitter_connected) {
+        const twitterIdentity = authUser?.identities?.find(
+          (i) => i.provider === "twitter"
+        );
+        twitterUsername = twitterIdentity?.identity_data?.user_name || "";
+        baseRate += TWITTER_CONNECT_REWARD;
+        twitterConnected = true;
+
+        const { error: twitterUpdateErr } = await supabase
+          .from("users")
+          .update({
+            twitter_connected: true,
+            twitter_username: twitterUsername,
+            base_rate: baseRate,
+          })
+          .eq("id", userId);
+
+        if (twitterUpdateErr) throw twitterUpdateErr;
+      }
+
+      setUser({
+        ...dbUser,
+        points,
+        base_rate: baseRate,
+        twitter_connected: twitterConnected,
+        twitter_username: twitterUsername,
+      });
       return true;
     } catch (err) {
-      console.error("💥 loadUserData exception:", err);
+      console.error("loadUserData error:", err);
       return false;
     }
   };
 
-  // Refresh user from Supabase
   const refreshUser = async () => {
     if (user?.id) await loadUserData(user.id);
   };
 
   useEffect(() => {
-    let mounted = true;
-
-    // Replace the initSession function in AuthProvider.tsx
-
     const initSession = async () => {
-      try {
-        console.log("🔍 Checking session...");
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session?.user) {
+        const success = await loadUserData(session.user.id);
 
-        console.log("📋 Session result:", session ? "Found" : "Not found");
-
-        if (!mounted) return;
-
-        if (session?.user) {
-          console.log("✅ Session exists, loading user data...");
-
-          // Get referral code from URL before loading user
+        if (success) {
           const referralCode = new URLSearchParams(window.location.search).get(
             "ref"
           );
-          const hasAppliedReferral = localStorage.getItem(
+          const hasApplied = localStorage.getItem(
             `referral_applied_${session.user.id}`
           );
 
-          const success = await loadUserData(session.user.id);
-          console.log("📊 User data loaded:", success);
+          if (referralCode && !hasApplied) {
+            const { data, error } = await supabase.rpc("handle_referral", {
+              p_referral_code: referralCode,
+              p_new_user_id: session.user.id,
+            });
 
-          // Handle referral AFTER user is loaded
-          if (success && referralCode && !hasAppliedReferral) {
-            console.log("🎁 Applying referral code:", referralCode);
-
-            try {
-              const { data, error } = await supabase.rpc("handle_referral", {
-                referral_code: referralCode,
-                new_user_id: session.user.id,
-              });
-
-              if (error) {
-                console.error("❌ Referral error:", error);
-              } else {
-                console.log("✅ Referral applied successfully");
-                localStorage.setItem(
-                  `referral_applied_${session.user.id}`,
-                  "true"
-                );
-
-                // Reload user data to get updated values
-                await loadUserData(session.user.id);
-              }
-            } catch (err) {
-              console.error("💥 Referral exception:", err);
+            if (!error && data) {
+              localStorage.setItem(
+                `referral_applied_${session.user.id}`,
+                "true"
+              );
+              await loadUserData(session.user.id);
             }
           }
-        } else {
-          console.log("❌ No session found, setting user to null");
-          setUser(null);
         }
-      } catch (err) {
-        console.error("❗ Session initialization error:", err);
+      } else {
         setUser(null);
       }
+      setLoading(false);
     };
 
     initSession();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(
+    const { data: listener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (!mounted) return;
-
         if (
-          (event === "SIGNED_IN" ||
-            event === "USER_UPDATED" ||
-            event === "TOKEN_REFRESHED") &&
-          session?.user
+          event === "SIGNED_IN" ||
+          event === "USER_UPDATED" ||
+          event === "TOKEN_REFRESHED"
         ) {
-          await loadUserData(session.user.id);
-          return;
-        }
-
-        if (event === "SIGNED_OUT") {
+          if (session?.user) await loadUserData(session.user.id);
+        } else if (event === "SIGNED_OUT") {
           setUser(null);
         }
       }
     );
 
-    return () => {
-      mounted = false;
-      authListener?.subscription?.unsubscribe();
-    };
+    return () => listener.subscription.unsubscribe();
   }, []);
 
   return (

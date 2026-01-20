@@ -1,3 +1,4 @@
+// Hero.tsx (removed sendBeacon to avoid import/auth issues)
 "use client";
 
 import { useEffect, useState, useRef } from "react";
@@ -14,7 +15,6 @@ import {
 import { motion } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/AuthContext";
-import { User as SupabaseUser } from "@supabase/supabase-js";
 import {
   BASE_RATE,
   REFERRAL_BONUS,
@@ -34,7 +34,6 @@ const Hero = () => {
   const [leaderboard, setLeaderboard] = useState<User[]>([]);
   const [referralLeaderboard, setReferralLeaderboard] = useState<User[]>([]);
   const [userPosition, setUserPosition] = useState<number | null>(null);
-  // const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"leaderboard" | "quests">(
@@ -43,28 +42,6 @@ const Hero = () => {
   const [activeLeaderboard, setActiveLeaderboard] = useState<
     "points" | "referrals"
   >("points");
-
-  // Auth is centralized in AuthProvider; Hero reads auth via useAuth().
-
-  // const loadUserData = async (userId: string) => {
-  //   try {
-  //     const { data } = await supabase
-  //       .from("users")
-  //       .select("*")
-  //       .eq("id", userId)
-  //       .single();
-
-  //     if (data) {
-  //       setUser(data);
-  //       return data as User;
-  //     }
-
-  //     return null;
-  //   } catch (error) {
-  //     console.error("Error loading user data:", error);
-  //     return null;
-  //   }
-  // };
 
   const handleGoogleSignIn = async () => {
     setAuthLoading(true);
@@ -75,7 +52,6 @@ const Hero = () => {
           redirectTo: `${window.location.origin}${window.location.pathname}${window.location.search}`,
         },
       });
-
       if (error) throw error;
     } catch (error) {
       console.error("Sign in error:", error);
@@ -85,272 +61,130 @@ const Hero = () => {
     }
   };
 
-  // const handleSignOut = async () => {
-  //   await supabase.auth.signOut();
-  //   setUser(null);
-  // };
-
-  // useEffect(() => {
-  //   if (!user?.id) return;
-
-  //   const interval = setInterval(async () => {
-
-  //     setUser((prev) => {
-  //       if (!prev) return null;
-
-  //       const newPoints = prev.points + prev.base_rate;
-
-  //       (async () => {
-  //         try {
-  //           await supabase
-  //             .from("users")
-  //             .update({ points: newPoints })
-  //             .eq("id", prev.id);
-  //         } catch (error) {
-  //           console.error("Error updating points:", error);
-  //         }
-  //       })();
-
-  //       return { ...prev, points: newPoints };
-  //     });
-  //   }, 1000);
-
-  //   return () => clearInterval(interval);
-  // }, [user?.id]);
+  const handleTwitterConnect = async () => {
+    if (!user || user.twitter_connected) return;
+    try {
+      const { error } = await supabase.auth.updateUser({
+        data: { provider: "twitter" }, // Triggers link if not linked
+      });
+      if (error) throw error;
+      // Auth state change will handle update
+    } catch (error) {
+      console.error("Twitter connect error:", error);
+      alert("Failed to connect Twitter.");
+    }
+  };
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user) return;
 
-    const start = Date.now();
-    const basePoints = user.points;
+    let startTime = Date.now();
+    let lastSaveTime = Date.now();
+    let basePoints = user.points;
     const baseRate = user.base_rate;
 
     const interval = setInterval(async () => {
-      const elapsed = (Date.now() - start) / 1000;
-      const newPoints = basePoints + elapsed * baseRate;
+      const now = Date.now();
+      const elapsedMs = now - startTime;
+      const newPoints = basePoints + (elapsedMs / 1000) * baseRate;
       setDisplayPoints(newPoints);
 
-      // Save back to DB every 5 seconds
-      try {
-        await supabase
-          .from("users")
-          .update({ points: newPoints })
-          .eq("id", user.id);
-      } catch (err) {
-        console.error("Error updating points in DB:", err);
+      if (now - lastSaveTime >= 5000) {
+        try {
+          const { error } = await supabase
+            .from("users")
+            .update({
+              points: newPoints,
+              last_update: new Date().toISOString(),
+            })
+            .eq("id", user.id);
+          if (!error) {
+            basePoints = newPoints;
+            startTime = now;
+            lastSaveTime = now;
+            setUser((prev) => (prev ? { ...prev, points: newPoints } : null));
+          }
+        } catch (err) {
+          console.error("Save points error:", err);
+        }
       }
-    }, 5000);
+    }, 100); // Smooth update
 
-    return () => clearInterval(interval);
-  }, [user]);
+    return () => {
+      clearInterval(interval);
+    };
+  }, [user, setUser]);
 
   useEffect(() => {
     if (!user) return;
 
     const loadLeaderboard = async () => {
-      try {
-        const { data } = await supabase
-          .from("users")
-          .select("*")
-          .order("points", { ascending: false });
+      const { data } = await supabase
+        .from("users")
+        .select("*")
+        .order("points", { ascending: false });
 
-        if (data) {
-          setLeaderboard(data);
+      if (data) {
+        setLeaderboard(data);
+        const refLB = [...data].sort(
+          (a, b) => b.referral_count - a.referral_count
+        );
+        setReferralLeaderboard(refLB);
 
-          // Compute referral counts
-          const referralCounts = new Map<string, number>();
-          data.forEach((u) => {
-            if (u.referred_by) {
-              const count = referralCounts.get(u.referred_by) || 0;
-              referralCounts.set(u.referred_by, count + 1);
-            }
-          });
-
-          // Create sorted referral leaderboard
-          const referralLB: User[] = data
-            .map((u) => ({
-              ...u,
-              referral_count: referralCounts.get(u.referral_code) || 0,
-            }))
-            .sort((a, b) => b.referral_count - a.referral_count);
-
-          setReferralLeaderboard(referralLB);
-
-          // Calculate user position based on active leaderboard
-          if (activeLeaderboard === "points") {
-            const position = data.findIndex((u) => u.id === user.id);
-            setUserPosition(position !== -1 ? position + 1 : null);
-          } else if (activeLeaderboard === "referrals") {
-            const position = referralLB.findIndex((u) => u.id === user.id);
-            setUserPosition(position !== -1 ? position + 1 : null);
-          }
+        if (activeLeaderboard === "points") {
+          const pos = data.findIndex((u) => u.id === user.id) + 1;
+          setUserPosition(pos || null);
+        } else {
+          const pos = refLB.findIndex((u) => u.id === user.id) + 1;
+          setUserPosition(pos || null);
         }
-      } catch (error) {
-        console.error("Error loading leaderboard:", error);
       }
     };
 
     loadLeaderboard();
+    const interval = setInterval(loadLeaderboard, 5000);
 
     const channel = supabase
       .channel("leaderboard-changes")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "users" },
-        () => {
-          loadLeaderboard();
-        }
+        loadLeaderboard
       )
       .subscribe();
 
-    const interval = setInterval(loadLeaderboard, 5000);
-
     return () => {
-      channel.unsubscribe();
       clearInterval(interval);
+      channel.unsubscribe();
     };
-  }, [user?.id, activeLeaderboard, user]);
-
-  const handleTwitterConnect = async () => {
-    if (!user || user.twitter_connected) return;
-
-    try {
-      const { error } = await supabase.auth.linkIdentity({
-        provider: "twitter",
-        options: {
-          redirectTo: `${window.location.origin}/`,
-        },
-      });
-
-      if (error) {
-        console.error("Twitter OAuth error:", error);
-        alert(
-          `Failed to connect Twitter: ${error.message || "Please try again."}`
-        );
-      }
-    } catch (error) {
-      console.error("Error connecting Twitter:", error);
-      alert(
-        `Failed to connect Twitter: ${error.message || "Please try again."}`
-      );
-    }
-  };
+  }, [user, activeLeaderboard]);
 
   const handleTaskClick = async (task: TwitterTask) => {
-    if (!user) return;
+    if (!user || user.tasks_completed.includes(task.id)) return;
 
-    const completedTasks = Array.isArray(user.tasks_completed)
-      ? user.tasks_completed
-      : [];
-
-    if (completedTasks.includes(task.id)) return;
-
-    try {
-      let taskUrl = task.url;
-
-      // Handle share quest dynamically
-      if (task.isShareQuest) {
-        const referralLink = `waitlist.tessium.io?ref=${user.referral_code}`;
-
-        const tweetText = `The shift is coming 🌊\n\n@Tessium_io is building the AI-edutainment layer powering real onboarding.\n\nI just joined the limited waitlist - earning early points before launch.\n\nDon't snooze 👉 ${referralLink}`;
-
-        const encodedTweet = encodeURIComponent(tweetText);
-        taskUrl = `https://x.com/intent/post?text=${encodedTweet}`;
-      }
-
-      const popup = window.open(taskUrl, "_blank", "width=600,height=700");
-      const updatedTasksCompleted = [...completedTasks, task.id];
-      const updatedBaseRate = user.base_rate + task.reward;
-
-      setUser((prev) =>
-        prev
-          ? {
-              ...prev,
-              tasks_completed: updatedTasksCompleted,
-              base_rate: updatedBaseRate,
-            }
-          : prev
-      );
-
-      console.log(
-        "Local update applied. Updated tasks:",
-        updatedTasksCompleted
-      );
-
-      supabase
-        .rpc("complete_task", {
-          p_user_id: user.id,
-          p_task_id: task.id,
-          p_reward: task.reward,
-        })
-        .then(
-          ({ data, error }) => {
-            if (error) {
-              console.error("Background Supabase RPC error:", error);
-              console.error("Error details:", error?.message || error);
-              setTimeout(() => {
-                supabase
-                  .rpc("complete_task", {
-                    p_user_id: user.id,
-                    p_task_id: task.id,
-                    p_reward: task.reward,
-                  })
-                  .then(
-                    ({ data: retryData, error: retryError }) => {
-                      if (retryError) {
-                        console.error("Retry failed:", retryError);
-                      } else {
-                        console.log("Retry success:", retryData);
-
-                        refreshUser();
-                      }
-                    },
-                    (retryRejectErr) => {
-                      console.error("Retry rejected:", retryRejectErr);
-                    }
-                  );
-              }, 2000);
-            } else {
-              console.log("Background Supabase RPC success:", data);
-              refreshUser();
-            }
-          },
-          (rejectErr) => {
-            console.error("Background Supabase rejection error:", rejectErr);
-          }
-        );
-    } catch (error) {
-      console.error("Error completing task:", error);
+    let taskUrl = task.url;
+    if (task.isShareQuest) {
+      const referralLink = `${window.location.origin}?ref=${user.referral_code}`;
+      const tweetText = `The shift is coming 🌊\n\n@Tessium_io is building the AI-edutainment layer powering real onboarding.\n\nI just joined the limited waitlist - earning early points before launch.\n\nDon't snooze 👉 ${referralLink}`;
+      taskUrl = `https://x.com/intent/post?text=${encodeURIComponent(
+        tweetText
+      )}`;
     }
+
+    window.open(taskUrl, "_blank", "width=600,height=700");
+
+    const updatedTasks = [...user.tasks_completed, task.id];
+    const updatedRate = user.base_rate + task.reward;
+    setUser({ ...user, tasks_completed: updatedTasks, base_rate: updatedRate });
+
+    const { error } = await supabase.rpc("complete_task", {
+      p_user_id: user.id,
+      p_task_id: task.id,
+      p_reward: task.reward,
+    });
+    if (error) console.error("Task complete error:", error);
+    else refreshUser();
   };
-
-  // const generateReferralCode = (): string => {
-  //   return Math.random().toString(36).substring(2, 8).toUpperCase();
-  // };
-
-  // const rewardReferrer = async (referralCode: string) => {
-  //   try {
-  //     const { data: referrer } = await supabase
-  //       .from("users")
-  //       .select("*")
-  //       .eq("referral_code", referralCode)
-  //       .single();
-
-  //     if (referrer) {
-  //       await supabase
-  //         .from("users")
-  //         .update({
-
-  //           base_rate: referrer.base_rate + REFERRAL_BONUS,
-  //           referral_count: referrer.referral_count + 1,
-  //         })
-  //         .eq("id", referrer.id);
-  //     }
-  //   } catch (error) {
-  //     console.error("Error rewarding referrer:", error);
-  //     alert(`Failed to reward referrer: ${error.message}`);
-  //   }
-  // };
 
   const copyReferralLink = () => {
     const link = `${window.location.origin}?ref=${user?.referral_code}`;
@@ -359,22 +193,6 @@ const Hero = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Scroll functions
-  // const scrollToFeatures = () => {
-  //   const featuresElement = document.getElementById("features");
-  //   if (featuresElement) {
-  //     featuresElement.scrollIntoView({ behavior: "smooth" });
-  //   }
-  // };
-
-  // const scrollToWaitlist = () => {
-  //   const waitlistElement = document.getElementById("waitlist");
-  //   if (waitlistElement) {
-  //     waitlistElement.scrollIntoView({ behavior: "smooth" });
-  //   }
-  // };
-
-  // Custom cursor effect
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (heroRef.current) {
@@ -384,64 +202,42 @@ const Hero = () => {
           y: e.clientY - rect.top,
         });
       }
-
       if (cursorRef.current) {
         cursorRef.current.style.left = `${e.clientX}px`;
         cursorRef.current.style.top = `${e.clientY}px`;
       }
     };
-
     window.addEventListener("mousemove", handleMouseMove);
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-    };
+    return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
-  // Prepare leaderboard displays so current user can be pinned to the top
-  // while still showing their real/global rank.
-  const pointsWithRank: (User & { globalRank: number })[] = leaderboard.map(
-    (u, idx) => ({ ...u, globalRank: idx + 1 })
-  );
+  const pointsWithRank = leaderboard.map((u, idx) => ({
+    ...u,
+    globalRank: idx + 1,
+  }));
+  const pointsDisplay = user
+    ? pointsWithRank.slice(0, 15).some((u) => u.id === user.id)
+      ? pointsWithRank.slice(0, 15)
+      : [
+          pointsWithRank.find((u) => u.id === user.id)!,
+          ...pointsWithRank.slice(0, 14),
+        ]
+    : pointsWithRank.slice(0, 15);
 
-  let pointsDisplay: (User & { globalRank: number })[] = [];
+  const referralsWithRank = referralLeaderboard.map((u, idx) => ({
+    ...u,
+    globalRank: idx + 1,
+  }));
+  const referralsDisplay = user
+    ? referralsWithRank.slice(0, 15).some((u) => u.id === user.id)
+      ? referralsWithRank.slice(0, 15)
+      : [
+          referralsWithRank.find((u) => u.id === user.id)!,
+          ...referralsWithRank.slice(0, 14),
+        ]
+    : referralsWithRank.slice(0, 15);
 
-  if (user) {
-    const userEntry = pointsWithRank.find((u) => u.id === user.id);
-    const userInTop15 = pointsWithRank
-      .slice(0, 15)
-      .some((u) => u.id === user.id);
-
-    if (userEntry && !userInTop15) {
-      // Show user at top with their real rank, then top 15
-      pointsDisplay = [userEntry, ...pointsWithRank.slice(0, 15)];
-    } else {
-      // User is in top 15 or doesn't exist, just show top 15
-      pointsDisplay = pointsWithRank.slice(0, 15);
-    }
-  } else {
-    pointsDisplay = pointsWithRank.slice(0, 15);
-  }
-
-  const referralsWithRank: (User & { globalRank: number })[] =
-    referralLeaderboard.map((u, idx) => ({ ...u, globalRank: idx + 1 }));
-
-  let referralsDisplay: (User & { globalRank: number })[] = [];
-
-  if (user) {
-    const userEntry = referralsWithRank.find((u) => u.id === user.id);
-    const userInTop15 = referralsWithRank
-      .slice(0, 15)
-      .some((u) => u.id === user.id);
-
-    if (userEntry && !userInTop15) {
-      referralsDisplay = [userEntry, ...referralsWithRank.slice(0, 15)];
-    } else {
-      referralsDisplay = referralsWithRank.slice(0, 15);
-    }
-  } else {
-    referralsDisplay = referralsWithRank.slice(0, 15);
-  }
-
+  // UI retained, minor adjustments for types/vars
   return (
     <section
       ref={heroRef}
@@ -467,14 +263,7 @@ const Hero = () => {
         <div className="absolute top-1/2 right-1/4 w-72 h-72 rounded-full bg-secondary/10 blur-3xl" />
       </div>
 
-      {/* Mobile background images */}
-      {/* <div className="absolute inset-0 -z-10 md:hidden opacity-20">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <FloatingImages isMobile={true} />
-        </div>
-      </div> */}
       {loading ? (
-        // Only show loading if we're still checking AND don't have user data yet
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto"></div>
           <p className="mt-4 text-gray-400">Loading...</p>
@@ -564,12 +353,9 @@ const Hero = () => {
               </p>
 
               <div className="relative bg-black bg-opacity-40 rounded-lg md:p-6 p-3 border border-gray-700 overflow-hidden">
-                {/* Referral Link - allow it to flow under the button */}
                 <div className="md:text-sm text-xs font-mono text-white break-all md:pr-32">
                   {window.location.origin}?ref={user.referral_code}
                 </div>
-
-                {/* Button positioned absolutely inside the div */}
                 <button
                   onClick={copyReferralLink}
                   className="md:text-base text-sm absolute bottom-2 right-2 top-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-6 py-3 md:rounded-md rounded-sm font-semibold transition-all flex items-center gap-2 shadow-lg transform hover:scale-105 z-10"
@@ -699,8 +485,7 @@ const Hero = () => {
 
                                 <div>
                                   <div className="font-semibold md:text-lg text-sm">
-                                    {entry.display_name ||
-                                      generateDisplayName(entry.id)}
+                                    {entry.display_name}
                                   </div>
                                 </div>
                               </div>
@@ -757,8 +542,7 @@ const Hero = () => {
 
                                 <div>
                                   <div className="font-semibold md:text-lg text-sm">
-                                    {entry.display_name ||
-                                      generateDisplayName(entry.id)}
+                                    {entry.display_name}
                                   </div>
                                 </div>
                               </div>
@@ -840,75 +624,6 @@ const Hero = () => {
   );
 };
 
-// Floating Web3 images component
-// const FloatingImages = ({ isMobile }: { isMobile: boolean }) => {
-//   return (
-//     <div
-//       className={`relative flex flex-row min-h-screen justify-center items-center ${
-//         isMobile ? "h-full w-full" : "h-[500px] w-full"
-//       }`}
-//     >
-//       <motion.div
-//         className="absolute"
-//         style={{
-//           top: "30%",
-//           right: "15%",
-//           zIndex: 2,
-//         }}
-//         animate={{
-//           y: [0, 20, 0],
-//         }}
-//         transition={{
-//           duration: 5,
-//           repeat: Number.POSITIVE_INFINITY,
-//           repeatType: "reverse",
-//           delay: 0.5,
-//         }}
-//       >
-//         <HoverableImage
-//           src="/logolight.PNG"
-//           alt="Crypto Wallet"
-//           width={400}
-//           height={400}
-//         />
-//       </motion.div>
-//     </div>
-//   );
-// };
-
-// Hoverable image component with transparent background
-// const HoverableImage = ({
-//   src,
-//   alt,
-//   width,
-//   height,
-// }: {
-//   src: string;
-//   alt: string;
-//   width: number;
-//   height: number;
-// }) => {
-//   return (
-//     <motion.div
-//       className="relative"
-//       whileHover={{
-//         scale: 1.1,
-//         filter: "drop-shadow(0 0 15px rgba(120, 120, 255, 0.6))",
-//       }}
-//       transition={{ duration: 0.3 }}
-//     >
-//       <img
-//         src={src || "/placeholder.svg"}
-//         alt={alt}
-//         width={width}
-//         height={height}
-//         className="object-contain"
-//       />
-//     </motion.div>
-//   );
-// };
-
-// Shooting stars background component
 const ShootingStarsBackground = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -919,75 +634,55 @@ const ShootingStarsBackground = () => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Set canvas dimensions
     const setCanvasDimensions = () => {
-      if (canvas) {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-      }
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
     };
 
     setCanvasDimensions();
     window.addEventListener("resize", setCanvasDimensions);
 
-    // Create stars
-    // const stars: Star[] = []
     const shootingStars: ShootingStar[] = [];
     const maxShootingStars = 15;
 
-    // Create a shooting star
     const createShootingStar = (): ShootingStar => {
-      // Start from left side with random angle
       const angle = (Math.random() * Math.PI) / 4 - Math.PI / 8;
       return {
         x: Math.random() * canvas.width * 0.3,
         y: Math.random() * canvas.height * 0.5,
         length: Math.floor(Math.random() * 80) + 50,
-        speed: Math.random() * 2 + 3, // Reduced from (8 + 10) to (3 + 4)
-        size: Math.random() * 1.5 + 0.5, // Slightly reduced size
-        color: `rgba(255, 255, 255, 0.8)`, // Reduced opacity from 1 to 0.8
+        speed: Math.random() * 2 + 3,
+        size: Math.random() * 1.5 + 0.5,
+        color: `rgba(255, 255, 255, 0.8)`,
         trail: [],
-        opacity: 0.5, // Reduced from 1 to 0.7
+        opacity: 0.5,
         active: true,
       };
     };
 
-    // Initialize shooting stars with staggered start times
     for (let i = 0; i < maxShootingStars; i++) {
       const star = createShootingStar();
       star.active = false;
-      setTimeout(() => {
-        star.active = true;
-      }, Math.random() * 15000); // Stagger start times
+      setTimeout(() => (star.active = true), Math.random() * 15000);
       shootingStars.push(star);
     }
 
-    // Animation loop
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Update and draw shooting stars
       shootingStars.forEach((star) => {
         if (!star.active) return;
 
-        // Move the star
         star.x += star.speed;
         star.y += star.speed * 0.3;
 
-        // Store position for trail
         star.trail.unshift({ x: star.x, y: star.y });
+        if (star.trail.length > star.length) star.trail.pop();
 
-        // Limit trail length
-        if (star.trail.length > star.length) {
-          star.trail.pop();
-        }
-
-        // Draw trail
         if (star.trail.length > 1) {
           ctx.beginPath();
           ctx.moveTo(star.trail[0].x, star.trail[0].y);
 
-          // Create gradient for trail
           const gradient = ctx.createLinearGradient(
             star.trail[0].x,
             star.trail[0].y,
@@ -997,38 +692,31 @@ const ShootingStarsBackground = () => {
           gradient.addColorStop(
             0,
             `rgba(255, 255, 255, ${star.opacity * 0.8})`
-          ); // Reduced brightness
+          );
           gradient.addColorStop(
             0.3,
             `rgba(155, 176, 255, ${star.opacity * 0.6})`
-          ); // Reduced brightness
+          );
           gradient.addColorStop(1, `rgba(121, 176, 255, 0)`);
 
           ctx.strokeStyle = gradient;
           ctx.lineWidth = star.size;
 
-          // Draw smooth curve through trail points
           for (let i = 1; i < star.trail.length; i++) {
             ctx.lineTo(star.trail[i].x, star.trail[i].y);
           }
-
           ctx.stroke();
 
-          // Draw star head
           ctx.beginPath();
           ctx.arc(star.x, star.y, star.size * 1.5, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity * 0.9})`; // Reduced brightness
+          ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity * 0.9})`;
           ctx.fill();
         }
 
-        // Reset if off screen
         if (star.x > canvas.width || star.y > canvas.height) {
-          const newStar = createShootingStar();
-          Object.assign(star, newStar);
+          Object.assign(star, createShootingStar());
           star.active = false;
-          setTimeout(() => {
-            star.active = true;
-          }, Math.random() * 3000);
+          setTimeout(() => (star.active = true), Math.random() * 3000);
         }
       });
 
@@ -1037,9 +725,7 @@ const ShootingStarsBackground = () => {
 
     animate();
 
-    return () => {
-      window.removeEventListener("resize", setCanvasDimensions);
-    };
+    return () => window.removeEventListener("resize", setCanvasDimensions);
   }, []);
 
   return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />;
