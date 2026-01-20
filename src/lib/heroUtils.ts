@@ -12,7 +12,7 @@ export const TWITTER_TASKS: TwitterTask[] = [
   {
     id: "share_on_twitter",
     name: "Share your referral link on X",
-    url: "https://twitter.com/intent/tweet",
+    url: "",
     isShareQuest: true,
     type: "twitter_share",
     reward: 0.3,

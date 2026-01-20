@@ -185,11 +185,13 @@ const Hero = () => {
 
     if (task.type === "twitter_share" && task.tweet_template) {
       const referralLink = `https://waitlist.tessium.io?ref=${user.referral_code}`;
-      const tweetText = task.tweet_template.replace(
-        "{{REFERRAL_URL}}",
-        referralLink
-      );
-      taskUrl = `${task.url}?text=${encodeURIComponent(tweetText)}`;
+      const tweetText = `The shift is coming 🌊\n\n
+@Tessium_io is building the AI-edutainment layer powering real onboarding.\n\n
+I just joined the limited waitlist - earning early points before launch.\n\n
+Don't snooze 👉 ${referralLink}`;
+      taskUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(
+        tweetText
+      )}`;
     }
 
     window.open(taskUrl, "_blank", "width=600,height=700");
@@ -208,6 +210,7 @@ const Hero = () => {
       p_user_id: user.id,
       p_task_id: task.id,
     });
+    await refresh();
   };
 
   const copyReferralLink = () => {
