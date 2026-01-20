@@ -1,4 +1,4 @@
-// AuthProvider.tsx (updated to set display_name on create)
+// AuthProvider.tsx (fixed loading state)
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -16,7 +16,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [user, setUser] = useState<AppUser | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Start with true
 
   const loadUserData = async (userId: string): Promise<boolean> => {
     try {
@@ -26,7 +26,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         .eq("id", userId)
         .single();
 
-      if (error) throw error;
+      if (error && error.code !== "PGRST116") throw error; // PGRST116 = not found
 
       if (!dbUser) {
         // Create new user
@@ -130,51 +130,63 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     const initSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (session?.user) {
-        const success = await loadUserData(session.user.id);
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
 
-        if (success) {
-          const referralCode = new URLSearchParams(window.location.search).get(
-            "ref"
-          );
-          const hasApplied = localStorage.getItem(
-            `referral_applied_${session.user.id}`
-          );
+        if (session?.user) {
+          const success = await loadUserData(session.user.id);
 
-          if (referralCode && !hasApplied) {
-            const { data, error } = await supabase.rpc("handle_referral", {
-              p_referral_code: referralCode,
-              p_new_user_id: session.user.id,
-            });
+          if (success) {
+            const referralCode = new URLSearchParams(
+              window.location.search
+            ).get("ref");
+            const hasApplied = localStorage.getItem(
+              `referral_applied_${session.user.id}`
+            );
 
-            if (!error && data) {
-              localStorage.setItem(
-                `referral_applied_${session.user.id}`,
-                "true"
-              );
-              await loadUserData(session.user.id);
+            if (referralCode && !hasApplied) {
+              const { data, error } = await supabase.rpc("handle_referral", {
+                p_referral_code: referralCode,
+                p_new_user_id: session.user.id,
+              });
+
+              if (!error && data) {
+                localStorage.setItem(
+                  `referral_applied_${session.user.id}`,
+                  "true"
+                );
+                await loadUserData(session.user.id);
+              }
             }
           }
+        } else {
+          setUser(null);
         }
-      } else {
+      } catch (err) {
+        console.error("initSession error:", err);
         setUser(null);
+      } finally {
+        // Only set loading to false after we've checked the session
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     initSession();
 
     const { data: listener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log("Auth state change:", event); // Debug log
+
         if (
           event === "SIGNED_IN" ||
           event === "USER_UPDATED" ||
           event === "TOKEN_REFRESHED"
         ) {
-          if (session?.user) await loadUserData(session.user.id);
+          if (session?.user) {
+            await loadUserData(session.user.id);
+          }
         } else if (event === "SIGNED_OUT") {
           setUser(null);
         }
