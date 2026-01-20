@@ -30,7 +30,7 @@ const Hero = () => {
   const heroRef = useRef<HTMLDivElement>(null);
   const cursorRef = useRef<HTMLDivElement>(null);
   const [showModal, setShowModal] = useState(false);
-  const { user, loading, refresh, setUser } = useAuth();
+  const { user, loading, refresh, setUser, isTwitterConnected } = useAuth();
   // const [displayPoints, setDisplayPoints] = useState(0);
   const [leaderboard, setLeaderboard] = useState<User[]>([]);
   const [referralLeaderboard, setReferralLeaderboard] = useState<User[]>([]);
@@ -178,38 +178,46 @@ const Hero = () => {
     };
   }, [user, activeLeaderboard]);
 
+  const buildTweetUrl = (user: User) => {
+    const referralLink = `https://waitlist.tessium.io?ref=${user.referral_code}`;
+
+    const tweetText =
+      `The shift is coming 🌊\n\n` +
+      `@Tessium_io is building the AI-edutainment layer powering real onboarding.\n\n` +
+      `I just joined the limited waitlist and started earning early points.\n\n` +
+      `Join here 👉 ${referralLink}`;
+
+    return `https://x.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
+  };
+
   const handleTaskClick = async (task: TwitterTask) => {
     if (!user) return;
+    if (user.tasks_completed.includes(task.id)) return;
 
-    let taskUrl = task.url;
+    let url = task.url;
 
-    if (task.type === "twitter_share" && task.tweet_template) {
-      const referralLink = `https://waitlist.tessium.io?ref=${user.referral_code}`;
-      const tweetText = `The shift is coming 🌊\n\n
-@Tessium_io is building the AI-edutainment layer powering real onboarding.\n\n
-I just joined the limited waitlist - earning early points before launch.\n\n
-Don't snooze 👉 ${referralLink}`;
-      taskUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(
-        tweetText
-      )}`;
+    if (task.isShareQuest) {
+      url = buildTweetUrl(user);
     }
 
-    window.open(taskUrl, "_blank", "width=600,height=700");
+    if (url) {
+      window.open(url, "_blank", "width=600,height=700");
+    }
 
-    // Add points_rate for the task immediately in frontend (optimistic update)
-    const updatedRate = (user.points_rate ?? 0.1) + (task.reward ?? 0);
-    const updatedTasks = [...(user.tasks_completed ?? []), task.id];
+    // Optimistic update (instant UI feedback)
     setUser({
       ...user,
-      tasks_completed: updatedTasks,
-      points_rate: updatedRate,
+      tasks_completed: [...user.tasks_completed, task.id],
+      points_rate: user.points_rate + task.reward,
     });
 
-    // Then call the RPC to record completion in the backend
+    // Persist in Supabase
     await supabase.rpc("complete_task", {
       p_user_id: user.id,
       p_task_id: task.id,
     });
+
+    // Sync final state
     await refresh();
   };
 
@@ -402,7 +410,7 @@ Don't snooze 👉 ${referralLink}`;
               </div>
             </div>
 
-            {!user.twitter_connected ? (
+            {isTwitterConnected ? (
               <button
                 onClick={handleTwitterConnect}
                 className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-4 rounded-xl font-semibold transition-all mb-6 mt-7 mx-20 flex items-center justify-center gap-3 shadow-lg transform hover:scale-105"

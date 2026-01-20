@@ -17,15 +17,14 @@ export interface User {
   last_update?: string;
 }
 
-export type TwitterTask = {
+export interface TwitterTask {
   id: string;
   name: string;
-  url: string;
   type: string;
-  isShareQuest: boolean;
-  tweet_template?: string | null;
-  reward: number;
-};
+  url?: string;
+  isShareQuest?: boolean;
+  reward: number; // pts/sec increase
+}
 
 export interface Star {
   x: number;
