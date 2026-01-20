@@ -7,13 +7,15 @@ export const TWITTER_TASKS: TwitterTask[] = [
     url: "https://x.com/intent/follow?screen_name=Tessium_io",
     isShareQuest: false,
     type: "twitter_follow",
+    reward: 0.2,
   },
   {
     id: "share_on_twitter",
     name: "Share your referral link on X",
-    url: "",
+    url: "https://twitter.com/intent/tweet",
     isShareQuest: true,
     type: "twitter_share",
+    reward: 0.3,
   },
   {
     id: "join_telegram",
@@ -21,6 +23,7 @@ export const TWITTER_TASKS: TwitterTask[] = [
     url: "https://t.me/tessium_io",
     isShareQuest: false,
     type: "telegram",
+    reward: 0.3,
   },
   {
     id: "join_discord",
@@ -28,6 +31,7 @@ export const TWITTER_TASKS: TwitterTask[] = [
     url: "https://discord.com/invite/7M8qjGA4GK",
     isShareQuest: false,
     type: "discord",
+    reward: 0.15,
   },
   {
     id: "youtube_subscribe",
@@ -35,6 +39,7 @@ export const TWITTER_TASKS: TwitterTask[] = [
     url: "https://www.youtube.com/@tessium_io?si=0dg1zrShUIzl22r2&sub_confirmation=1",
     isShareQuest: false,
     type: "youtube",
+    reward: 0.1,
   },
   {
     id: "tiktok_follow",
@@ -42,6 +47,7 @@ export const TWITTER_TASKS: TwitterTask[] = [
     url: "https://www.tiktok.com/@tessium_io",
     isShareQuest: false,
     type: "tiktok",
+    reward: 0.1,
   },
 ];
 
