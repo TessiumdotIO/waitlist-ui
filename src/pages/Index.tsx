@@ -6,7 +6,7 @@ import HowItWorks from "@/components/HowItWorks";
 import WaitlistForm from "@/components/WaitlistForm";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/components/AuthContext";
-import AuthProvider from "@/components/AuthProvider";
+import { AuthProvider } from "@/components/AuthProvider";
 
 const PageContent: React.FC = () => {
   const { user } = useAuth();

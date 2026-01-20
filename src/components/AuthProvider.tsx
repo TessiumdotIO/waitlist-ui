@@ -1,224 +1,85 @@
-// AuthProvider.tsx (fixed loading state)
+// components/AuthProvider.tsx
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { User as AppUser } from "./types";
 import { AuthContext } from "./AuthContext";
-import {
-  BASE_RATE,
-  REFERRAL_BONUS,
-  TWITTER_CONNECT_REWARD,
-} from "@/lib/heroUtils";
 import { generateDisplayName } from "@/lib/nameGenerator";
+import { User } from "./types";
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
-  const [user, setUser] = useState<AppUser | null>(null);
-  const [loading, setLoading] = useState(true); // Start with true
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const loadUserData = async (userId: string): Promise<boolean> => {
-    try {
-      const { data: dbUser, error } = await supabase
-        .from("users")
-        .select("*")
-        .eq("id", userId)
-        .single();
+  const hydrateUser = async (id: string) => {
+    await supabase.rpc("sync_points", { p_user_id: id });
 
-      // If user doesn't exist, dbUser will be null and error.code will be 'PGRST116'
-      if (error && error.code !== "PGRST116") {
-        console.error("Error fetching user:", error);
-        throw error;
-      }
+    const { data } = await supabase
+      .from("users")
+      .select("*")
+      .eq("id", id)
+      .single();
 
-      if (!dbUser || error?.code === "PGRST116") {
-        // Create new user
-        const {
-          data: { user: authUser },
-        } = await supabase.auth.getUser();
-        const displayName = generateDisplayName(userId);
-        const newUser = {
-          id: userId,
-          points: 0,
-          base_rate: BASE_RATE,
-          twitter_connected: false,
-          tasks_completed: [],
-          referral_code: Math.random().toString(36).slice(2, 10).toUpperCase(),
-          avatar_url: authUser?.user_metadata?.avatar_url || "",
-          referral_count: 0,
-          last_update: new Date().toISOString(),
-          created_at: new Date().toISOString(),
-          display_name: displayName,
-        };
-
-        const { data: inserted, error: insertErr } = await supabase
-          .from("users")
-          .insert(newUser)
-          .select()
-          .single();
-
-        if (insertErr) throw insertErr;
-
-        setUser(inserted);
-        return true;
-      }
-
-      // Calculate accumulated points if last_update exists
-      let points = dbUser.points;
-      if (dbUser.last_update) {
-        const lastUpdate = Date.parse(dbUser.last_update);
-        if (!isNaN(lastUpdate)) {
-          const elapsed = (Date.now() - lastUpdate) / 1000;
-          points += elapsed * dbUser.base_rate;
-        }
-      }
-
-      // Update DB with new points and current timestamp
-      const now = new Date().toISOString();
-      const { error: updateErr } = await supabase
-        .from("users")
-        .update({ points, last_update: now })
-        .eq("id", userId);
-
-      if (updateErr) throw updateErr;
-
-      // Check for Twitter connection
-      const {
-        data: { user: authUser },
-      } = await supabase.auth.getUser();
-      const hasTwitter = authUser?.identities?.some(
-        (i) => i.provider === "twitter"
-      );
-      let twitterUsername = dbUser.twitter_username;
-      let baseRate = dbUser.base_rate;
-      let twitterConnected = dbUser.twitter_connected;
-
-      if (hasTwitter && !dbUser.twitter_connected) {
-        const twitterIdentity = authUser?.identities?.find(
-          (i) => i.provider === "twitter"
-        );
-        twitterUsername = twitterIdentity?.identity_data?.user_name || "";
-        baseRate += TWITTER_CONNECT_REWARD;
-        twitterConnected = true;
-
-        const { error: twitterUpdateErr } = await supabase
-          .from("users")
-          .update({
-            twitter_connected: true,
-            twitter_username: twitterUsername,
-            base_rate: baseRate,
-          })
-          .eq("id", userId);
-
-        if (twitterUpdateErr) throw twitterUpdateErr;
-      }
-
-      setUser({
-        ...dbUser,
-        points,
-        base_rate: baseRate,
-        twitter_connected: twitterConnected,
-        twitter_username: twitterUsername,
-      });
-      return true;
-    } catch (err) {
-      console.error("loadUserData error:", err);
-      return false;
-    }
-  };
-
-  const refreshUser = async () => {
-    if (user?.id) await loadUserData(user.id);
+    setUser(data);
   };
 
   useEffect(() => {
-    let mounted = true;
+    const init = async () => {
+      const { data } = await supabase.auth.getSession();
+      const authUser = data.session?.user;
 
-    const initSession = async () => {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        if (!mounted) return;
-
-        if (session?.user) {
-          const success = await loadUserData(session.user.id);
-
-          if (!mounted) return;
-
-          if (success) {
-            const referralCode = new URLSearchParams(
-              window.location.search
-            ).get("ref");
-            const hasApplied = localStorage.getItem(
-              `referral_applied_${session.user.id}`
-            );
-
-            if (referralCode && !hasApplied) {
-              const { data, error } = await supabase.rpc("handle_referral", {
-                p_referral_code: referralCode,
-                p_new_user_id: session.user.id,
-              });
-
-              if (!error && data) {
-                localStorage.setItem(
-                  `referral_applied_${session.user.id}`,
-                  "true"
-                );
-                if (mounted) await loadUserData(session.user.id);
-              }
-            }
-          }
-        } else {
-          if (mounted) setUser(null);
-        }
-      } catch (err) {
-        console.error("initSession error:", err);
-        if (mounted) setUser(null);
-      } finally {
-        // Always set loading to false, even if there's an error
-        if (mounted) {
-          console.log("Setting loading to false");
-          setLoading(false);
-        }
+      if (!authUser) {
+        setLoading(false);
+        return;
       }
+
+      const { data: dbUser } = await supabase
+        .from("users")
+        .select("id")
+        .eq("id", authUser.id)
+        .single();
+
+      if (!dbUser) {
+        await supabase.from("users").insert({
+          id: authUser.id,
+          display_name: generateDisplayName(authUser.id),
+          avatar_url: authUser.user_metadata.avatar_url,
+          referral_code: Math.random().toString(36).slice(2, 10).toUpperCase(),
+        });
+      }
+
+      await hydrateUser(authUser.id);
+
+      const ref = new URLSearchParams(window.location.search).get("ref");
+      if (ref) {
+        await supabase.rpc("handle_referral", {
+          p_referral_code: ref,
+          p_new_user_id: authUser.id,
+        });
+      }
+
+      setLoading(false);
     };
 
-    initSession();
+    init();
 
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!mounted) return;
+    const { data: sub } = supabase.auth.onAuthStateChange((_, session) => {
+      if (!session) setUser(null);
+      else hydrateUser(session.user.id);
+    });
 
-        console.log("Auth state change:", event);
-
-        if (
-          event === "SIGNED_IN" ||
-          event === "USER_UPDATED" ||
-          event === "TOKEN_REFRESHED"
-        ) {
-          if (session?.user) {
-            await loadUserData(session.user.id);
-          }
-        } else if (event === "SIGNED_OUT") {
-          setUser(null);
-        }
-      }
-    );
-
-    return () => {
-      mounted = false;
-      listener.subscription.unsubscribe();
-    };
+    return () => sub.subscription.unsubscribe();
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, setUser, refreshUser }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        refresh: async () => user && hydrateUser(user.id),
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
-};
-
-export default AuthProvider;
+}
