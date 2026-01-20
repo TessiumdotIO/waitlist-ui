@@ -5,7 +5,7 @@ import Features from "@/components/Features";
 import HowItWorks from "@/components/HowItWorks";
 import WaitlistForm from "@/components/WaitlistForm";
 import Footer from "@/components/Footer";
-import { useAuth } from "@/components/AuthContext";
+import { useAuth } from "../components/authHelpers";
 import { AuthProvider } from "@/components/AuthProvider";
 
 const PageContent: React.FC = () => {
