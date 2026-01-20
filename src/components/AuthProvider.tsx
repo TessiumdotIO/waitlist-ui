@@ -13,6 +13,7 @@ interface Props {
 export const AuthProvider = ({ children }: Props) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isTwitterConnected, setIsTwitterConnected] = useState(false);
 
   const hydrateUser = async (id: string) => {
     await supabase.rpc("sync_points", { p_user_id: id });
@@ -30,6 +31,16 @@ export const AuthProvider = ({ children }: Props) => {
     const init = async () => {
       const { data } = await supabase.auth.getSession();
       const authUser = data.session?.user;
+
+      if (authUser) {
+        const { data: userData } = await supabase.auth.getUser();
+
+        const connected =
+          userData.user?.app_metadata?.provider === "twitter" ||
+          userData.user?.identities?.some((i) => i.provider === "twitter");
+
+        setIsTwitterConnected(!!connected);
+      }
 
       if (!authUser) {
         setLoading(false);
@@ -67,11 +78,23 @@ export const AuthProvider = ({ children }: Props) => {
 
     init();
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_, session) => {
-      if (!session) setUser(null);
-      else hydrateUser(session.user.id);
-    });
+    const { data: sub } = supabase.auth.onAuthStateChange(
+      async (_, session) => {
+        if (!session) {
+          setUser(null);
+          setIsTwitterConnected(false);
+        } else {
+          await hydrateUser(session.user.id);
 
+          const { data: userData } = await supabase.auth.getUser();
+          const connected = userData.user?.identities?.some(
+            (i) => i.provider === "twitter"
+          );
+
+          setIsTwitterConnected(!!connected);
+        }
+      }
+    );
     return () => sub.subscription.unsubscribe();
   }, []);
 
@@ -105,7 +128,9 @@ export const AuthProvider = ({ children }: Props) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, setUser, loading, refresh }}>
+    <AuthContext.Provider
+      value={{ user, setUser, loading, refresh, isTwitterConnected }}
+    >
       {children}
     </AuthContext.Provider>
   );
