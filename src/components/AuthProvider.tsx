@@ -26,9 +26,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         .eq("id", userId)
         .single();
 
-      if (error && error.code !== "PGRST116") throw error; // PGRST116 = not found
+      // If user doesn't exist, dbUser will be null and error.code will be 'PGRST116'
+      if (error && error.code !== "PGRST116") {
+        console.error("Error fetching user:", error);
+        throw error;
+      }
 
-      if (!dbUser) {
+      if (!dbUser || error?.code === "PGRST116") {
         // Create new user
         const {
           data: { user: authUser },
@@ -129,14 +133,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   useEffect(() => {
+    let mounted = true;
+
     const initSession = async () => {
       try {
         const {
           data: { session },
         } = await supabase.auth.getSession();
 
+        if (!mounted) return;
+
         if (session?.user) {
           const success = await loadUserData(session.user.id);
+
+          if (!mounted) return;
 
           if (success) {
             const referralCode = new URLSearchParams(
@@ -157,19 +167,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                   `referral_applied_${session.user.id}`,
                   "true"
                 );
-                await loadUserData(session.user.id);
+                if (mounted) await loadUserData(session.user.id);
               }
             }
           }
         } else {
-          setUser(null);
+          if (mounted) setUser(null);
         }
       } catch (err) {
         console.error("initSession error:", err);
-        setUser(null);
+        if (mounted) setUser(null);
       } finally {
-        // Only set loading to false after we've checked the session
-        setLoading(false);
+        // Always set loading to false, even if there's an error
+        if (mounted) {
+          console.log("Setting loading to false");
+          setLoading(false);
+        }
       }
     };
 
@@ -177,7 +190,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const { data: listener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log("Auth state change:", event); // Debug log
+        if (!mounted) return;
+
+        console.log("Auth state change:", event);
 
         if (
           event === "SIGNED_IN" ||
@@ -193,7 +208,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     );
 
-    return () => listener.subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      listener.subscription.unsubscribe();
+    };
   }, []);
 
   return (
