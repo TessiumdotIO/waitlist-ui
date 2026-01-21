@@ -246,26 +246,32 @@ const Hero = () => {
     ...u,
     globalRank: idx + 1,
   }));
+
   const pointsDisplay = user
     ? pointsWithRank.slice(0, 15).some((u) => u.id === user.id)
       ? pointsWithRank.slice(0, 15)
-      : [
-          pointsWithRank.find((u) => u.id === user.id)!,
-          ...pointsWithRank.slice(0, 14),
-        ]
+      : (() => {
+          const currentUser = pointsWithRank.find((u) => u.id === user.id);
+          return currentUser
+            ? [currentUser, ...pointsWithRank.slice(0, 14)]
+            : pointsWithRank.slice(0, 15);
+        })()
     : pointsWithRank.slice(0, 15);
 
   const referralsWithRank = referralLeaderboard.map((u, idx) => ({
     ...u,
     globalRank: idx + 1,
   }));
+
   const referralsDisplay = user
     ? referralsWithRank.slice(0, 15).some((u) => u.id === user.id)
       ? referralsWithRank.slice(0, 15)
-      : [
-          referralsWithRank.find((u) => u.id === user.id)!,
-          ...referralsWithRank.slice(0, 14),
-        ]
+      : (() => {
+          const currentUser = referralsWithRank.find((u) => u.id === user.id);
+          return currentUser
+            ? [currentUser, ...referralsWithRank.slice(0, 14)]
+            : referralsWithRank.slice(0, 15);
+        })()
     : referralsWithRank.slice(0, 15);
 
   return (
