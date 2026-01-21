@@ -290,7 +290,7 @@ const Hero = () => {
         <div className="absolute top-1/2 right-1/4 w-72 h-72 rounded-full bg-secondary/10 blur-3xl" />
       </div>
 
-      {!authReady ? (
+      {user && !authReady ? (
         // Skeleton UI for loading state
         <div className="max-w-7xl mx-auto md:px-7 px-0 w-full md:flex gap-12">
           <div className="md:w-1/2 flex flex-col items-center justify-center mt-28 md:mt-0">
