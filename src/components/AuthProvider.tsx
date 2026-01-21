@@ -75,13 +75,17 @@ export const AuthProvider = ({ children }: Props) => {
 
         // Check if user exists in database
         console.log("🔍 Checking if user exists in DB...");
-        const { data: dbUser, error: fetchError } = await supabase
+        const { data: dbUser, error } = await supabase
           .from("users")
           .select("id")
           .eq("id", authUser.id)
-          .single(); // Use maybeSingle instead of single to handle 0 rows
+          .maybeSingle(); // Use maybeSingle instead of single to handle 0 rows
 
-        console.log("💾 DB user exists:", !!dbUser, fetchError);
+        if (error) {
+          throw error;
+        }
+
+        console.log("💾 DB user exists:", !!dbUser, error);
 
         // Create user if doesn't exist
         if (!dbUser) {
@@ -113,7 +117,7 @@ export const AuthProvider = ({ children }: Props) => {
             .select()
             .single();
 
-          if (insertError) {
+          if (insertError && insertError.code !== "23505") {
             console.error("❌ Insert error:", insertError);
             console.error(
               "❌ Insert error details:",
@@ -143,7 +147,7 @@ export const AuthProvider = ({ children }: Props) => {
 
         // Load user data
         console.log("💧 Loading user data...");
-        // await hydrateUser(authUser.id);
+        await hydrateUser(authUser.id);
 
         // Handle referral if present
         const ref = new URLSearchParams(window.location.search).get("ref");
@@ -210,7 +214,7 @@ export const AuthProvider = ({ children }: Props) => {
     });
 
     return () => subscription.unsubscribe();
-  }, [hydrateUser, user]);
+  }, [hydrateUser]);
 
   // Real-time subscription for user updates
   useEffect(() => {
