@@ -20,30 +20,42 @@ export const AuthProvider = ({ children }: Props) => {
       console.log("💧 Hydrating user:", id);
 
       // Sync points first
-      const { error: syncError } = await supabase.rpc("sync_points", {
+      const syncRes = await supabase.rpc("sync_points", {
         p_user_id: id,
       });
 
-      if (syncError) {
-        console.error("❌ Sync points error:", syncError);
+      if (syncRes?.error) {
+        console.error("❌ Sync points error:", syncRes.error);
+      } else {
+        console.log("🔁 sync_points result:", syncRes);
       }
 
-      // Fetch updated user data
+      // Fetch updated user data (use maybeSingle to avoid throwing when no row)
       const { data, error } = await supabase
         .from("users")
         .select("*")
         .eq("id", id)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error("❌ Fetch user error:", error);
-        throw error;
+        setUser(null);
+        return false;
+      }
+
+      if (!data) {
+        console.warn("⚠️ No user row found for id during hydrate:", id);
+        setUser(null);
+        return false;
       }
 
       console.log("✅ User data fetched:", data);
-      setUser(data);
+      setUser(data as User);
+      return true;
     } catch (error) {
       console.error("Error hydrating user:", error);
+      setUser(null);
+      return false;
     }
   }, []);
 
