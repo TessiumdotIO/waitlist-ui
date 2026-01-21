@@ -12,7 +12,8 @@ interface Props {
 
 export const AuthProvider = ({ children }: Props) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  //   const [loading, setLoading] = useState(true);
+  const [authReady, setAuthReady] = useState(false);
   const [isTwitterConnected, setIsTwitterConnected] = useState(false);
 
   const hydrateUser = useCallback(async (id: string) => {
@@ -49,125 +50,19 @@ export const AuthProvider = ({ children }: Props) => {
 
   useEffect(() => {
     const init = async () => {
-      try {
-        console.log("🔍 Starting auth initialization...");
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        const authUser = session?.user;
-
-        console.log("📧 Auth user:", authUser?.email, authUser?.id);
-
-        if (!authUser) {
-          console.log("❌ No auth user found");
-          setLoading(false);
-          return;
-        }
-
-        // Check Twitter connection
-        const { data: userData } = await supabase.auth.getUser();
-        const connected = userData.user?.identities?.some(
-          (i) => i.provider === "twitter"
-        );
-        setIsTwitterConnected(!!connected);
-        console.log("🐦 Twitter connected:", connected);
-
-        // Check if user exists in database
-        console.log("🔍 Checking if user exists in DB...");
-        const { data: dbUser, error: fetchError } = await supabase
-          .from("users")
-          .select("id")
-          .eq("id", authUser.id)
-          .maybeSingle(); // Use maybeSingle instead of single to handle 0 rows
-
-        console.log("💾 DB user exists:", !!dbUser, fetchError);
-
-        // Create user if doesn't exist
-        if (!dbUser) {
-          console.log("📝 Creating new user in database...");
-
-          const referralCode = Math.random()
-            .toString(36)
-            .slice(2, 10)
-            .toUpperCase();
-
-          const newUser = {
-            id: authUser.id,
-            email: authUser.email,
-            display_name: generateDisplayName(authUser.id),
-            avatar_url: authUser.user_metadata.avatar_url || null,
-            referral_code: referralCode,
-            points_rate: 0.1,
-            points: 0,
-            twitter_connected: false,
-            tasks_completed: [],
-            referral_count: 0,
-          };
-
-          console.log("📝 Inserting user:", newUser);
-
-          const { data: insertedUser, error: insertError } = await supabase
-            .from("users")
-            .insert(newUser)
-            .select()
-            .single();
-
-          if (insertError) {
-            console.error("❌ Insert error:", insertError);
-            console.error(
-              "❌ Insert error details:",
-              JSON.stringify(insertError, null, 2)
-            );
-
-            // Try to give user more info about what went wrong
-            if (insertError.code === "23505") {
-              console.error(
-                "❌ Duplicate key - user might already exist or referral code collision"
-              );
-            } else if (insertError.code === "23503") {
-              console.error(
-                "❌ Foreign key violation - auth user might not exist"
-              );
-            } else if (insertError.message?.includes("policy")) {
-              console.error(
-                "❌ RLS policy blocking insert - need to fix permissions"
-              );
-            }
-
-            throw insertError;
-          }
-
-          console.log("✅ User created successfully:", insertedUser);
-        }
-
-        // Load user data
-        console.log("💧 Loading user data...");
-        await hydrateUser(authUser.id);
-
-        // Handle referral if present
-        const ref = new URLSearchParams(window.location.search).get("ref");
-        if (ref) {
-          console.log("🎁 Processing referral code:", ref);
-          const { error: refError } = await supabase.rpc("handle_referral", {
-            p_referral_code: ref,
-            p_new_user_id: authUser.id,
-          });
-
-          if (refError) {
-            console.error("❌ Referral error:", refError);
-          } else {
-            console.log("✅ Referral processed");
-            await hydrateUser(authUser.id);
-          }
-        }
-
-        console.log("🎉 Initialization complete");
-      } catch (error) {
-        console.error("❌ Init error:", error);
-      } finally {
-        setLoading(false);
+      if (!session?.user) {
+        setUser(null);
+        setIsTwitterConnected(false);
+        setAuthReady(true);
+        return;
       }
+
+      // Do NOT hydrate here
+      setAuthReady(true);
     };
 
     init();
@@ -176,41 +71,42 @@ export const AuthProvider = ({ children }: Props) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("🔄 Auth state changed:", event);
-
-      if (!session) {
+      if (!session?.user) {
         setUser(null);
         setIsTwitterConnected(false);
-      } else {
-        await hydrateUser(session.user.id);
-
-        const { data: userData } = await supabase.auth.getUser();
-        const connected = userData.user?.identities?.some(
-          (i) => i.provider === "twitter"
-        );
-        setIsTwitterConnected(!!connected);
-
-        // If Twitter just connected, update database
-        if (
-          event === "SIGNED_IN" &&
-          connected &&
-          user &&
-          !user.twitter_connected
-        ) {
-          const twitterIdentity = userData.user?.identities?.find(
-            (i) => i.provider === "twitter"
-          );
-
-          if (twitterIdentity) {
-            await supabase.rpc("connect_twitter", {
-              p_user_id: session.user.id,
-              p_twitter_username: twitterIdentity.identity_data?.user_name,
-              p_twitter_avatar: twitterIdentity.identity_data?.avatar_url,
-            });
-            await hydrateUser(session.user.id);
-          }
-        }
+        return;
       }
+
+      const authUser = session.user;
+
+      // Ensure DB user exists
+      const { data: dbUser } = await supabase
+        .from("users")
+        .select("id")
+        .eq("id", authUser.id)
+        .maybeSingle();
+
+      if (!dbUser) {
+        await supabase.from("users").insert({
+          id: authUser.id,
+          email: authUser.email,
+          display_name: generateDisplayName(authUser.id),
+          avatar_url: authUser.user_metadata.avatar_url ?? null,
+          referral_code: Math.random().toString(36).slice(2, 10).toUpperCase(),
+        });
+      }
+
+      // Handle referral ONCE
+      const ref = new URLSearchParams(window.location.search).get("ref");
+      if (ref) {
+        await supabase.rpc("handle_referral", {
+          p_referral_code: ref,
+          p_new_user_id: authUser.id,
+        });
+      }
+
+      // Final hydration
+      await hydrateUser(authUser.id);
     });
 
     return () => subscription.unsubscribe();
@@ -263,7 +159,7 @@ export const AuthProvider = ({ children }: Props) => {
 
   return (
     <AuthContext.Provider
-      value={{ user, setUser, loading, refresh, isTwitterConnected }}
+      value={{ user, setUser, authReady, refresh, isTwitterConnected }}
     >
       {children}
     </AuthContext.Provider>

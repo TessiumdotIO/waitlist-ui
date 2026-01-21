@@ -81,7 +81,7 @@ const Hero = () => {
   const heroRef = useRef<HTMLDivElement>(null);
   const cursorRef = useRef<HTMLDivElement>(null);
   const [showModal, setShowModal] = useState(false);
-  const { user, loading, refresh, isTwitterConnected } = useAuth();
+  const { user, authReady, refresh, isTwitterConnected } = useAuth();
   const [leaderboard, setLeaderboard] = useState<User[]>([]);
   const [referralLeaderboard, setReferralLeaderboard] = useState<User[]>([]);
   const [userPosition, setUserPosition] = useState<number | null>(null);
@@ -290,7 +290,7 @@ const Hero = () => {
         <div className="absolute top-1/2 right-1/4 w-72 h-72 rounded-full bg-secondary/10 blur-3xl" />
       </div>
 
-      {loading ? (
+      {authReady ? (
         // Skeleton UI for loading state
         <div className="max-w-7xl mx-auto md:px-7 px-0 w-full md:flex gap-12">
           <div className="md:w-1/2 flex flex-col items-center justify-center mt-28 md:mt-0">

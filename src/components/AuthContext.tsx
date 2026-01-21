@@ -4,7 +4,7 @@ import { User } from "./types";
 export interface AuthContextType {
   user: User | null;
   setUser: (user: User | null) => void;
-  loading: boolean;
+  authReady: boolean;
   refresh: () => Promise<void>;
   isTwitterConnected: boolean;
 }
