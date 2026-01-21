@@ -473,7 +473,7 @@ const Hero = () => {
               </div>
             </div>
 
-            {!user.twitter_connected ? (
+            {!isTwitterConnected ? (
               <button
                 onClick={handleTwitterConnect}
                 className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-4 rounded-xl font-semibold transition-all mb-6 mt-7 mx-20 flex items-center justify-center gap-3 shadow-lg transform hover:scale-105"

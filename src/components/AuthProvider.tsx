@@ -79,7 +79,7 @@ export const AuthProvider = ({ children }: Props) => {
           .from("users")
           .select("id")
           .eq("id", authUser.id)
-          .maybeSingle(); // Use maybeSingle instead of single to handle 0 rows
+          .single(); // Use maybeSingle instead of single to handle 0 rows
 
         console.log("💾 DB user exists:", !!dbUser, fetchError);
 
@@ -143,7 +143,7 @@ export const AuthProvider = ({ children }: Props) => {
 
         // Load user data
         console.log("💧 Loading user data...");
-        await hydrateUser(authUser.id);
+        // await hydrateUser(authUser.id);
 
         // Handle referral if present
         const ref = new URLSearchParams(window.location.search).get("ref");
@@ -175,40 +175,36 @@ export const AuthProvider = ({ children }: Props) => {
     // Auth state listener
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("🔄 Auth state changed:", event);
-
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!session) {
         setUser(null);
         setIsTwitterConnected(false);
-      } else {
-        await hydrateUser(session.user.id);
+        return;
+      }
 
-        const { data: userData } = await supabase.auth.getUser();
-        const connected = userData.user?.identities?.some(
+      const { data: authData } = await supabase.auth.getUser();
+      const connected = authData.user?.identities?.some(
+        (i) => i.provider === "twitter"
+      );
+      setIsTwitterConnected(!!connected);
+
+      // Always hydrate — no conditions
+      await hydrateUser(session.user.id);
+
+      // Handle twitter connect safely
+      if (connected) {
+        const twitter = authData.user?.identities?.find(
           (i) => i.provider === "twitter"
         );
-        setIsTwitterConnected(!!connected);
 
-        // If Twitter just connected, update database
-        if (
-          event === "SIGNED_IN" &&
-          connected &&
-          user &&
-          !user.twitter_connected
-        ) {
-          const twitterIdentity = userData.user?.identities?.find(
-            (i) => i.provider === "twitter"
-          );
+        if (twitter) {
+          await supabase.rpc("connect_twitter", {
+            p_user_id: session.user.id,
+            p_twitter_username: twitter.identity_data?.user_name,
+            p_twitter_avatar: twitter.identity_data?.avatar_url,
+          });
 
-          if (twitterIdentity) {
-            await supabase.rpc("connect_twitter", {
-              p_user_id: session.user.id,
-              p_twitter_username: twitterIdentity.identity_data?.user_name,
-              p_twitter_avatar: twitterIdentity.identity_data?.avatar_url,
-            });
-            await hydrateUser(session.user.id);
-          }
+          await hydrateUser(session.user.id);
         }
       }
     });
