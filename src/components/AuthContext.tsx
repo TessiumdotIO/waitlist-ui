@@ -7,6 +7,7 @@ export interface AuthContextType {
   loading: boolean;
   refresh: () => Promise<void>;
   isTwitterConnected: boolean;
+  isValidUser: boolean;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(
