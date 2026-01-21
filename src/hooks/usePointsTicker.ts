@@ -1,22 +1,27 @@
-// hooks/usePointsTicker.ts
-"use client";
+import { useState, useEffect, useRef } from "react";
 
-import { useEffect, useState } from "react";
+export function usePointsTicker(basePoints: number, pointsRate: number) {
+  const [displayPoints, setDisplayPoints] = useState(basePoints);
+  const startTimeRef = useRef(Date.now());
+  const basePointsRef = useRef(basePoints);
 
-export function usePointsTicker(points: number, rate: number) {
-  const [display, setDisplay] = useState(points);
-
+  // Update refs when base points change (from database sync)
   useEffect(() => {
-    const start = Date.now();
-    const base = points;
+    basePointsRef.current = basePoints;
+    startTimeRef.current = Date.now();
+    setDisplayPoints(basePoints);
+  }, [basePoints]);
 
-    const id = setInterval(() => {
-      const elapsed = (Date.now() - start) / 1000;
-      setDisplay(base + elapsed * rate);
+  // Ticker animation
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const elapsed = (Date.now() - startTimeRef.current) / 1000;
+      const newPoints = basePointsRef.current + elapsed * pointsRate;
+      setDisplayPoints(newPoints);
     }, 100);
 
-    return () => clearInterval(id);
-  }, [points, rate]);
+    return () => clearInterval(interval);
+  }, [pointsRate]);
 
-  return display;
+  return displayPoints;
 }

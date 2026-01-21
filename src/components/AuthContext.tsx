@@ -6,6 +6,7 @@ export interface AuthContextType {
   setUser: (user: User | null) => void;
   loading: boolean;
   refresh: () => Promise<void>;
+  isTwitterConnected: boolean;
 }
 
 // ✅ Only create context here, once

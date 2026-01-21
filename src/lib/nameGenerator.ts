@@ -1,100 +1,47 @@
 const adjectives = [
   "Swift",
+  "Bright",
+  "Bold",
   "Cosmic",
-  "Mystic",
-  "Noble",
-  "Silent",
-  "Brave",
-  "Wild",
-  "Fierce",
-  "Ancient",
-  "Stellar",
-  "Thunder",
-  "Shadow",
-  "Crystal",
-  "Golden",
-  "Silver",
-  "Iron",
-  "Phantom",
-  "Blazing",
-  "Frozen",
-  "Electric",
-  "Mighty",
-  "Divine",
-  "Rogue",
-  "Epic",
-  "Legendary",
-  "Cryptic",
-  "Radiant",
-  "Quantum",
-  "Neon",
-  "Cyber",
   "Digital",
-  "Pixel",
-  "Lunar",
-  "Solar",
-  "Astral",
-  "Void",
-  "Primal",
+  "Electric",
+  "Stellar",
+  "Quantum",
+  "Cyber",
+  "Neon",
+  "Turbo",
+  "Ultra",
+  "Mega",
+  "Super",
+  "Hyper",
 ];
 
 const nouns = [
-  "Wolf",
-  "Dragon",
   "Phoenix",
+  "Dragon",
   "Tiger",
   "Eagle",
   "Falcon",
+  "Wolf",
   "Lion",
   "Panther",
-  "Bear",
   "Hawk",
   "Viper",
-  "Raven",
-  "Serpent",
-  "Fox",
-  "Jaguar",
-  "Shark",
-  "Warrior",
-  "Knight",
-  "Hunter",
   "Ninja",
   "Samurai",
-  "Titan",
-  "Guardian",
-  "Champion",
-  "Legend",
-  "Hero",
-  "Sage",
-  "Wizard",
-  "Ranger",
-  "Striker",
-  "Voyager",
-  "Pioneer",
-  "Explorer",
-  "Sentinel",
-  "Crusader",
-  "Wanderer",
+  "Warrior",
+  "Knight",
 ];
 
-/**
- * Alternative: Generate random name without consistency
- */
-export const generateDisplayName = (userId: string): string => {
-  // Create a simple hash from the user ID
-  let hash = 0;
-  for (let i = 0; i < userId.length; i++) {
-    const char = userId.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash = hash & hash; // Convert to 32-bit integer
-  }
+export function generateDisplayName(userId: string): string {
+  // Use userId as seed for consistent generation
+  const hash = userId.split("").reduce((acc, char) => {
+    return acc + char.charCodeAt(0);
+  }, 0);
 
-  // Use the hash to select adjective and noun
-  const adjIndex = Math.abs(hash) % adjectives.length;
-  const nounIndex = Math.abs(hash >> 8) % nouns.length;
+  const adjIndex = hash % adjectives.length;
+  const nounIndex = (hash * 7) % nouns.length;
+  const num = (hash % 9000) + 1000;
 
-  // Generate a number based on the hash (0-999)
-  const number = Math.abs(hash % 1000);
-
-  return `${adjectives[adjIndex]}${nouns[nounIndex]}${number}`;
-};
+  return `${adjectives[adjIndex]}${nouns[nounIndex]}${num}`;
+}
