@@ -1,4 +1,3 @@
-// Hero.tsx (removed sendBeacon to avoid import/auth issues)
 "use client";
 
 import { useEffect, useState, useRef } from "react";
@@ -14,24 +13,75 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/lib/supabase";
-import {
-  BASE_RATE,
-  REFERRAL_BONUS,
-  TWITTER_CONNECT_REWARD,
-  TWITTER_TASKS,
-} from "@/lib/heroUtils";
 import { ShootingStar, TwitterTask, User } from "./types";
-import { generateDisplayName } from "@/lib/nameGenerator";
 import { usePointsTicker } from "@/hooks/usePointsTicker";
 import { useAuth } from "./AuthContext";
+
+const TWITTER_TASKS: TwitterTask[] = [
+  {
+    id: "follow_main",
+    name: "Follow Tessium on X",
+    url: "https://x.com/intent/follow?screen_name=Tessium_io",
+    isShareQuest: false,
+    type: "twitter_follow",
+    reward: 0.2,
+  },
+  {
+    id: "share_on_twitter",
+    name: "Share your referral link on X",
+    url: "",
+    isShareQuest: true,
+    type: "twitter_share",
+    reward: 0.3,
+  },
+  {
+    id: "join_telegram",
+    name: "Join Telegram Community",
+    url: "https://t.me/tessium_io",
+    isShareQuest: false,
+    type: "telegram",
+    reward: 0.3,
+  },
+  {
+    id: "join_discord",
+    name: "Join Discord Server",
+    url: "https://discord.com/invite/7M8qjGA4GK",
+    isShareQuest: false,
+    type: "discord",
+    reward: 0.15,
+  },
+  {
+    id: "youtube_subscribe",
+    name: "Subscribe to YouTube Channel",
+    url: "https://www.youtube.com/@tessium_io?si=0dg1zrShUIzl22r2&sub_confirmation=1",
+    isShareQuest: false,
+    type: "youtube",
+    reward: 0.1,
+  },
+  {
+    id: "tiktok_follow",
+    name: "Follow Tessium on TikTok",
+    url: "https://www.tiktok.com/@tessium_io",
+    isShareQuest: false,
+    type: "tiktok",
+    reward: 0.1,
+  },
+];
+
+const TWITTER_CONNECT_REWARD = 0.5;
+const REFERRAL_BONUS = 0.5;
+
+// Skeleton Components
+const SkeletonBox = ({ className = "" }: { className?: string }) => (
+  <div className={`animate-pulse bg-white bg-opacity-5 rounded ${className}`} />
+);
 
 const Hero = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const heroRef = useRef<HTMLDivElement>(null);
   const cursorRef = useRef<HTMLDivElement>(null);
   const [showModal, setShowModal] = useState(false);
-  const { user, loading, refresh, setUser, isTwitterConnected } = useAuth();
-  // const [displayPoints, setDisplayPoints] = useState(0);
+  const { user, loading, refresh, isTwitterConnected } = useAuth();
   const [leaderboard, setLeaderboard] = useState<User[]>([]);
   const [referralLeaderboard, setReferralLeaderboard] = useState<User[]>([]);
   const [userPosition, setUserPosition] = useState<number | null>(null);
@@ -44,14 +94,10 @@ const Hero = () => {
     "points" | "referrals"
   >("points");
 
-  const TASK_REWARD_RATES: Record<string, number> = {
-    follow_main: 0.2,
-    share_on_twitter: 0.3,
-    join_telegram: 0.3,
-    join_discord: 0.15,
-    youtube_subscribe: 0.1,
-    tiktok_follow: 0.1,
-  };
+  const displayPoints = usePointsTicker(
+    user?.points ?? 0,
+    user?.points_rate ?? 0.1
+  );
 
   const handleGoogleSignIn = async () => {
     setAuthLoading(true);
@@ -78,7 +124,7 @@ const Hero = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "twitter",
         options: {
-          redirectTo: window.location.href, // stay on the same page after auth
+          redirectTo: window.location.href,
         },
       });
 
@@ -88,51 +134,6 @@ const Hero = () => {
       alert("Failed to connect X account");
     }
   };
-
-  const displayPoints = usePointsTicker(
-    user?.points ?? 0,
-    user?.points_rate ?? 0.1
-  );
-
-  // useEffect(() => {
-  //   if (!user) return;
-
-  //   let startTime = Date.now();
-  //   let lastSaveTime = Date.now();
-  //   let basePoints = user.points;
-  //   const baseRate = user.base_rate;
-
-  //   const interval = setInterval(async () => {
-  //     const now = Date.now();
-  //     const elapsedMs = now - startTime;
-  //     const newPoints = basePoints + (elapsedMs / 1000) * baseRate;
-  //     setDisplayPoints(newPoints);
-
-  //     if (now - lastSaveTime >= 5000) {
-  //       try {
-  //         const { error } = await supabase
-  //           .from("users")
-  //           .update({
-  //             points: newPoints,
-  //             last_update: new Date().toISOString(),
-  //           })
-  //           .eq("id", user.id);
-  //         if (!error) {
-  //           basePoints = newPoints;
-  //           startTime = now;
-  //           lastSaveTime = now;
-  //           setUser((prev) => (prev ? { ...prev, points: newPoints } : null));
-  //         }
-  //       } catch (err) {
-  //         console.error("Save points error:", err);
-  //       }
-  //     }
-  //   }, 100);
-
-  //   return () => {
-  //     clearInterval(interval);
-  //   };
-  // }, [user, setUser]);
 
   useEffect(() => {
     if (!user) return;
@@ -204,21 +205,16 @@ const Hero = () => {
       window.open(url, "_blank", "width=600,height=700");
     }
 
-    // Optimistic update (instant UI feedback)
-    setUser({
-      ...user,
-      tasks_completed: [...user.tasks_completed, task.id],
-      points_rate: user.points_rate + task.reward,
-    });
+    try {
+      await supabase.rpc("complete_task", {
+        p_user_id: user.id,
+        p_task_id: task.id,
+      });
 
-    // Persist in Supabase
-    await supabase.rpc("complete_task", {
-      p_user_id: user.id,
-      p_task_id: task.id,
-    });
-
-    // Sync final state
-    await refresh();
+      await refresh();
+    } catch (error) {
+      console.error("Task completion error:", error);
+    }
   };
 
   const copyReferralLink = () => {
@@ -272,7 +268,6 @@ const Hero = () => {
         ]
     : referralsWithRank.slice(0, 15);
 
-  // UI retained, minor adjustments for types/vars
   return (
     <section
       ref={heroRef}
@@ -280,18 +275,15 @@ const Hero = () => {
         !user && "py-24"
       } overflow-hidden`}
     >
-      {/* Custom cursor */}
       <div
         ref={cursorRef}
         className="fixed w-8 h-8 rounded-full border-2 border-primary pointer-events-none z-50 -translate-x-1/2 -translate-y-1/2 mix-blend-difference hidden md:block"
       />
 
-      {/* Particle background */}
       <div className="absolute inset-0 -z-10">
         <ShootingStarsBackground />
       </div>
 
-      {/* Background elements */}
       <div className="absolute inset-0 -z-10 opacity-50">
         <div className="absolute top-1/3 left-1/4 w-96 h-96 rounded-full bg-primary/10 blur-3xl" />
         <div className="absolute bottom-1/4 right-1/3 w-64 h-64 rounded-full bg-accent/10 blur-3xl" />
@@ -299,9 +291,77 @@ const Hero = () => {
       </div>
 
       {loading ? (
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto"></div>
-          <p className="mt-4 text-gray-400">Loading...</p>
+        // Skeleton UI for loading state
+        <div className="max-w-7xl mx-auto md:px-7 px-0 w-full md:flex gap-12">
+          <div className="md:w-1/2 flex flex-col items-center justify-center mt-28 md:mt-0">
+            {/* Points Skeleton */}
+            <SkeletonBox className="h-12 w-64 mb-2" />
+            <SkeletonBox className="h-6 w-32 mb-7" />
+            <SkeletonBox className="h-16 md:w-96 w-80 mb-7" />
+
+            {/* Invite Friends Card Skeleton */}
+            <div className="bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl md:p-6 p-3 shadow-xl w-full max-w-md">
+              <SkeletonBox className="h-8 w-48 mb-4" />
+              <SkeletonBox className="h-12 w-full mb-4" />
+              <div className="relative bg-black bg-opacity-40 rounded-lg md:p-6 p-3 border border-gray-700">
+                <SkeletonBox className="h-6 w-full" />
+              </div>
+            </div>
+
+            {/* Twitter Connect Skeleton */}
+            <SkeletonBox className="w-full max-w-md h-14 mt-7 rounded-xl" />
+          </div>
+
+          <div className="md:w-1/2 mt-7 md:mt-0">
+            <div className="flex sm:hidden w-full items-center my-5 gap-2 p-2 bg-black bg-opacity-40 rounded-full border border-gray-700 text-sm">
+              <button className="px-4 py-1 rounded-full w-1/2 bg-white text-black">
+                Leaderboard
+              </button>
+              <button className="px-4 py-1 rounded-full w-1/2 text-white">
+                Quests
+              </button>
+            </div>
+
+            {/* Leaderboard Card Skeleton */}
+            <div className="bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl md:p-6 p-3 shadow-xl w-full md:h-[500px] h-[300px] mb-7 md:mb-1">
+              <div className="flex items-center justify-between mb-4">
+                <SkeletonBox className="h-6 w-32" />
+                <div className="flex items-center gap-2 p-2 bg-black bg-opacity-40 rounded-full border border-gray-700">
+                  <div className="px-4 py-1 rounded-full bg-white text-black text-sm">
+                    Points
+                  </div>
+                  <div className="px-4 py-1 rounded-full text-white text-sm">
+                    Referrals
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2 mt-4">
+                {[...Array(8)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between md:px-4 px-2 py-2 rounded-xl bg-white bg-opacity-5"
+                  >
+                    <div className="flex items-center gap-2 w-full">
+                      <SkeletonBox className="w-4 h-4" />
+                      <SkeletonBox className="w-7 h-7 rounded-full" />
+                      <SkeletonBox className="h-5 w-32" />
+                    </div>
+                    <SkeletonBox className="h-5 w-16" />
+                  </div>
+                ))}
+              </div>
+
+              <div className="sm:flex hidden items-center gap-2 absolute bottom-4 left-1/2 -translate-x-1/2 p-2 bg-black bg-opacity-40 rounded-full border border-gray-700 text-sm">
+                <button className="px-4 py-1 rounded-full bg-white text-black">
+                  Leaderboard
+                </button>
+                <button className="px-4 py-1 rounded-full text-white">
+                  Quests
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       ) : !user ? (
         <div className="max-w-7xl mx-auto w-full h-[450px] md:h-auto flex flex-col md:block items-center justify-center">
@@ -342,14 +402,17 @@ const Hero = () => {
                 <Button
                   variant="default"
                   onClick={handleGoogleSignIn}
-                  className="px-8 py-2 bg-accent flex items-center justify-center mx-auto"
+                  disabled={authLoading}
+                  className="px-8 py-2 bg-accent flex items-center justify-center mx-auto gap-2"
                 >
-                  <img
-                    src="/google-icon.svg"
-                    alt="Google Logo"
-                    className="w-5 h-5"
-                  />
-                  Connect with Google
+                  {!authLoading && (
+                    <img
+                      src="/google-icon.svg"
+                      alt="Google Logo"
+                      className="w-5 h-5"
+                    />
+                  )}
+                  {authLoading ? "Connecting..." : "Connect with Google"}
                 </Button>
                 <p className="text-gray-600 text-sm text-center mt-4">
                   Sign in to secure your spot
@@ -382,9 +445,9 @@ const Hero = () => {
               <p className="text-gray-300 mb-4 text-sm">
                 Share your unique link. Each friend who joins gives you{" "}
                 <span className="font-bold text-green-400">
-                  +{REFERRAL_BONUS} points
-                </span>{" "}
-                instantly!
+                  +{REFERRAL_BONUS} pts/sec
+                </span>
+                !
               </p>
 
               <div className="relative bg-black bg-opacity-40 rounded-lg md:p-6 p-3 border border-gray-700 overflow-hidden">
@@ -410,7 +473,7 @@ const Hero = () => {
               </div>
             </div>
 
-            {isTwitterConnected ? (
+            {!user.twitter_connected ? (
               <button
                 onClick={handleTwitterConnect}
                 className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-4 rounded-xl font-semibold transition-all mb-6 mt-7 mx-20 flex items-center justify-center gap-3 shadow-lg transform hover:scale-105"
@@ -422,8 +485,9 @@ const Hero = () => {
                 </span>
               </button>
             ) : (
-              <div className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-4 rounded-xl font-semibold transition-all mb-6 mt-7 mx-20 flex items-center justify-center gap-3 shadow-lg transform hover:scale-105">
-                X Connected with {user.twitter_username}
+              <div className="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white py-4 rounded-xl font-semibold mb-6 mt-7 mx-20 flex items-center justify-center gap-3 shadow-lg">
+                <Check size={24} />X Connected{" "}
+                {user.twitter_username && `as @${user.twitter_username}`}
               </div>
             )}
           </div>
@@ -480,7 +544,7 @@ const Hero = () => {
                   <div className="p-2 mt-4">
                     {activeLeaderboard === "points" && (
                       <div className="space-y-2">
-                        {pointsDisplay.map((entry, index) => {
+                        {pointsDisplay.map((entry) => {
                           const isUser = entry.id === user?.id;
                           const displayRank = isUser
                             ? userPosition ?? entry.globalRank
@@ -513,7 +577,11 @@ const Hero = () => {
                                 {entry.avatar_url && (
                                   <img
                                     src={entry.avatar_url}
-                                    alt={entry.name}
+                                    alt={
+                                      entry.display_name ||
+                                      entry.email ||
+                                      "User"
+                                    }
                                     className="w-7 h-7 rounded-full border-2 border-white border-opacity-20"
                                   />
                                 )}
@@ -537,7 +605,7 @@ const Hero = () => {
                     )}
                     {activeLeaderboard === "referrals" && (
                       <div className="space-y-2">
-                        {referralsDisplay.map((entry, index) => {
+                        {referralsDisplay.map((entry) => {
                           const isUser = entry.id === user?.id;
                           const displayRank = isUser
                             ? userPosition ?? entry.globalRank
@@ -570,7 +638,11 @@ const Hero = () => {
                                 {entry.avatar_url && (
                                   <img
                                     src={entry.avatar_url}
-                                    alt={entry.name}
+                                    alt={
+                                      entry.display_name ||
+                                      entry.email ||
+                                      "User"
+                                    }
                                     className="w-7 h-7 rounded-full border-2 border-white border-opacity-20"
                                   />
                                 )}
@@ -619,7 +691,7 @@ const Hero = () => {
                             <Check size={20} className="text-xs text-white" />
                           ) : (
                             <span className="bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm">
-                              +{TASK_REWARD_RATES[task.id]}/sec
+                              +{task.reward}/sec
                             </span>
                           )}
                         </button>
@@ -681,7 +753,6 @@ const ShootingStarsBackground = () => {
     const maxShootingStars = 15;
 
     const createShootingStar = (): ShootingStar => {
-      const angle = (Math.random() * Math.PI) / 4 - Math.PI / 8;
       return {
         x: Math.random() * canvas.width * 0.3,
         y: Math.random() * canvas.height * 0.5,
