@@ -146,107 +146,112 @@ export const AuthProvider = ({ children }: Props) => {
           return;
         }
 
-        // Check Twitter connection
-        const { data: userData } = await supabase.auth.getUser();
-        const connected = userData.user?.identities?.some(
-          (i) => i.provider === "twitter"
-        );
-        setIsTwitterConnected(!!connected);
-        console.log("🐦 Twitter connected:", connected);
+        // Quickly set a lightweight user from the session so the UI can render
+        // immediately. Run heavier DB/RPC work in the background so the app
+        // doesn't block the user on non-critical syncs.
+        const quickUser: User = {
+          id: authUser.id,
+          email: authUser.email || undefined,
+          display_name:
+            authUser.user_metadata?.full_name ||
+            generateDisplayName(authUser.id),
+          avatar_url: authUser.user_metadata?.avatar_url || undefined,
+          points: 0,
+          points_rate: 0.1,
+          twitter_connected: false,
+          tasks_completed: [],
+          referral_code: "",
+          referral_count: 0,
+          created_at: new Date().toISOString(),
+        } as User;
 
-        // Check if user exists in database
-        console.log("🔍 Checking if user exists in DB...");
-        const { data: dbUser, error: fetchError } = await supabase
-          .from("users")
-          .select("id")
-          .eq("id", authUser.id)
-          .maybeSingle(); // Use maybeSingle instead of single to handle 0 rows
+        setUser(quickUser);
 
-        console.log("💾 DB user exists:", !!dbUser, fetchError);
-
-        // Create user if doesn't exist
-        if (!dbUser) {
-          console.log("📝 Creating new user in database...");
-
-          const referralCode = Math.random()
-            .toString(36)
-            .slice(2, 10)
-            .toUpperCase();
-
-          const newUser = {
-            id: authUser.id,
-            email: authUser.email,
-            display_name: generateDisplayName(authUser.id),
-            avatar_url: authUser.user_metadata.avatar_url || null,
-            referral_code: referralCode,
-            points_rate: 0.1,
-            points: 0,
-            twitter_connected: false,
-            tasks_completed: [],
-            referral_count: 0,
-          };
-
-          console.log("📝 Inserting user:", newUser);
-
-          const { data: insertedUser, error: insertError } = await supabase
-            .from("users")
-            .insert(newUser)
-            .select()
-            .single();
-
-          if (insertError) {
-            console.error("❌ Insert error:", insertError);
-            console.error(
-              "❌ Insert error details:",
-              JSON.stringify(insertError, null, 2)
+        // Background: check twitter connection, ensure DB row exists and hydrate
+        (async () => {
+          try {
+            const { data: userData } = await supabase.auth.getUser();
+            const connected = userData.user?.identities?.some(
+              (i) => i.provider === "twitter"
             );
+            setIsTwitterConnected(!!connected);
+            console.log("🐦 Twitter connected:", connected);
 
-            // Try to give user more info about what went wrong
-            if (insertError.code === "23505") {
-              console.error(
-                "❌ Duplicate key - user might already exist or referral code collision"
-              );
-            } else if (insertError.code === "23503") {
-              console.error(
-                "❌ Foreign key violation - auth user might not exist"
-              );
-            } else if (insertError.message?.includes("policy")) {
-              console.error(
-                "❌ RLS policy blocking insert - need to fix permissions"
-              );
+            // Check if user exists in database
+            console.log("🔍 Checking if user exists in DB...");
+            const { data: dbUser, error: fetchError } = await supabase
+              .from("users")
+              .select("id")
+              .eq("id", authUser.id)
+              .maybeSingle();
+
+            console.log("💾 DB user exists:", !!dbUser, fetchError);
+
+            if (!dbUser) {
+              console.log("📝 Creating new user in database...");
+              const referralCode = Math.random()
+                .toString(36)
+                .slice(2, 10)
+                .toUpperCase();
+
+              const newUser = {
+                id: authUser.id,
+                email: authUser.email,
+                display_name: quickUser.display_name,
+                avatar_url: quickUser.avatar_url || null,
+                referral_code: referralCode,
+                points_rate: 0.1,
+                points: 0,
+                twitter_connected: false,
+                tasks_completed: [],
+                referral_count: 0,
+              };
+
+              console.log("📝 Inserting user:", newUser);
+
+              const { data: insertedUser, error: insertError } = await supabase
+                .from("users")
+                .insert(newUser)
+                .select()
+                .single();
+
+              if (insertError) {
+                console.error("❌ Insert error:", insertError);
+              } else {
+                console.log("✅ User created successfully:", insertedUser);
+              }
             }
 
-            throw insertError;
+            // hydrate and sync in background (don't block UI)
+            try {
+              await hydrateUser(authUser.id);
+            } catch (e) {
+              console.warn("Background hydrate failed:", e);
+            }
+
+            // Handle referral if present
+            const ref = new URLSearchParams(window.location.search).get("ref");
+            if (ref) {
+              console.log("🎁 Processing referral code:", ref);
+              const { error: refError } = await supabase.rpc(
+                "handle_referral",
+                {
+                  p_referral_code: ref,
+                  p_new_user_id: authUser.id,
+                }
+              );
+
+              if (refError) {
+                console.error("❌ Referral error:", refError);
+              } else {
+                console.log("✅ Referral processed");
+                await hydrateUser(authUser.id);
+              }
+            }
+          } catch (e) {
+            console.error("Background auth/user setup error:", e);
           }
-
-          console.log("✅ User created successfully:", insertedUser);
-        }
-
-        // Load user data (with timeout to avoid getting stuck)
-        console.log("💧 Loading user data...");
-        try {
-          await runWithTimeout(hydrateUser(authUser.id), 8000);
-        } catch (e) {
-          console.warn("Hydrate user timed out or failed:", e);
-          setUser(null);
-        }
-
-        // Handle referral if present
-        const ref = new URLSearchParams(window.location.search).get("ref");
-        if (ref) {
-          console.log("🎁 Processing referral code:", ref);
-          const { error: refError } = await supabase.rpc("handle_referral", {
-            p_referral_code: ref,
-            p_new_user_id: authUser.id,
-          });
-
-          if (refError) {
-            console.error("❌ Referral error:", refError);
-          } else {
-            console.log("✅ Referral processed");
-            await hydrateUser(authUser.id);
-          }
-        }
+        })();
 
         console.log("🎉 Initialization complete");
       } catch (error) {
