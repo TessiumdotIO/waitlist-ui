@@ -16,37 +16,41 @@ export const AuthProvider = ({ children }: Props) => {
   const [authReady, setAuthReady] = useState(false);
   const [isTwitterConnected, setIsTwitterConnected] = useState(false);
 
-  const hydrateUser = useCallback(async (id: string) => {
-    try {
-      console.log("💧 Hydrating user:", id);
+  const hydrateUser = useCallback(
+    async (id: string) => {
+      try {
+        console.log("💧 Hydrating user:", id);
 
-      // Sync points first
-      const { error: syncError } = await supabase.rpc("sync_points", {
-        p_user_id: id,
-      });
+        // Sync points first
+        const { error: syncError } = await supabase.rpc("sync_points", {
+          p_user_id: id,
+        });
 
-      if (syncError) {
-        console.error("❌ Sync points error:", syncError);
+        if (syncError) {
+          console.error("❌ Sync points error:", syncError);
+        }
+
+        // Fetch updated user data
+        const { data, error } = await supabase
+          .from("users")
+          .select("*")
+          .eq("id", id)
+          .single();
+
+        if (error) {
+          console.error("❌ Fetch user error:", error);
+          throw error;
+        }
+
+        console.log("✅ User data fetched:", data);
+        console.log(authReady);
+        setUser(data);
+      } catch (error) {
+        console.error("❌ Error hydrating user:", error);
       }
-
-      // Fetch updated user data
-      const { data, error } = await supabase
-        .from("users")
-        .select("*")
-        .eq("id", id)
-        .single();
-
-      if (error) {
-        console.error("❌ Fetch user error:", error);
-        throw error;
-      }
-
-      console.log("✅ User data fetched:", data);
-      setUser(data);
-    } catch (error) {
-      console.error("❌ Error hydrating user:", error);
-    }
-  }, []);
+    },
+    [authReady]
+  );
 
   useEffect(() => {
     const init = async () => {
