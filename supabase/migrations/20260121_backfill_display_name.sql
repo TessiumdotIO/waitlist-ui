@@ -1,5 +1,5 @@
 -- Backfill display_name for existing users
--- Deterministic generator that mirrors src/lib/nameGenerator.ts (sums char codes of id)
+-- Deterministic generator that mirrors src/lib/nameGenerator.ts (md5-based)
 
 BEGIN;
 
@@ -10,9 +10,7 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  s integer := 0;
-  i integer;
-  ch text;
+  h bigint;
   adjectives text[] := ARRAY[
     'Swift','Bright','Bold','Cosmic','Digital','Electric','Stellar','Quantum','Cyber','Neon','Turbo','Ultra','Mega','Super','Hyper'
   ];
@@ -23,15 +21,12 @@ DECLARE
   noun_idx integer;
   num integer;
 BEGIN
-  -- Sum ascii codes of characters in the id string (mirrors JS reducer)
-  FOR i IN 1..char_length(p_id) LOOP
-    ch := substr(p_id, i, 1);
-    s := s + ascii(ch);
-  END LOOP;
+  -- Use md5 and take the first 8 hex chars as a 32-bit integer for good distribution
+  h := ('x' || substr(md5(p_id), 1, 8))::bit(32)::bigint;
 
-  adj_idx := (s % array_length(adjectives, 1)) + 1; -- 1-based index
-  noun_idx := ((s * 7) % array_length(nouns, 1)) + 1;
-  num := (s % 9000) + 1000;
+  adj_idx := (h % array_length(adjectives, 1)) + 1; -- 1-based index
+  noun_idx := ((h * 7) % array_length(nouns, 1)) + 1;
+  num := (h % 9000) + 1000;
 
   RETURN adjectives[adj_idx] || nouns[noun_idx] || num::text;
 END;
