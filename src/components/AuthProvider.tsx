@@ -59,6 +59,20 @@ export const AuthProvider = ({ children }: Props) => {
     }
   }, []);
 
+  // Helper to run a promise with a timeout so we don't stay stuck on network hangs
+  const runWithTimeout = useCallback(
+    async <T,>(promise: Promise<T>, ms = 8000): Promise<T> => {
+      let timer: ReturnType<typeof setTimeout>;
+      return await Promise.race([
+        promise,
+        new Promise<T>((_, reject) => {
+          timer = setTimeout(() => reject(new Error("timeout")), ms);
+        }),
+      ]).finally(() => clearTimeout(timer));
+    },
+    []
+  );
+
   useEffect(() => {
     const init = async () => {
       try {
@@ -208,9 +222,14 @@ export const AuthProvider = ({ children }: Props) => {
           console.log("✅ User created successfully:", insertedUser);
         }
 
-        // Load user data
+        // Load user data (with timeout to avoid getting stuck)
         console.log("💧 Loading user data...");
-        await hydrateUser(authUser.id);
+        try {
+          await runWithTimeout(hydrateUser(authUser.id), 8000);
+        } catch (e) {
+          console.warn("Hydrate user timed out or failed:", e);
+          setUser(null);
+        }
 
         // Handle referral if present
         const ref = new URLSearchParams(window.location.search).get("ref");
@@ -253,8 +272,13 @@ export const AuthProvider = ({ children }: Props) => {
           return;
         }
 
-        // Refresh user data from DB
-        await hydrateUser(session.user.id);
+        // Refresh user data from DB (use timeout wrapper)
+        try {
+          await runWithTimeout(hydrateUser(session.user.id), 8000);
+        } catch (e) {
+          console.warn("Hydrate user (auth handler) timed out or failed:", e);
+          setUser(null);
+        }
 
         // Re-check identities from auth service
         const { data: userData } = await supabase.auth.getUser();
@@ -297,7 +321,7 @@ export const AuthProvider = ({ children }: Props) => {
     init();
 
     return () => subscription.unsubscribe();
-  }, [hydrateUser]);
+  }, [hydrateUser, runWithTimeout]);
 
   // Real-time subscription for user updates
   useEffect(() => {
