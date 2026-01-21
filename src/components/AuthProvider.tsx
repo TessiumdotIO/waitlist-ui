@@ -164,54 +164,70 @@ export const AuthProvider = ({ children }: Props) => {
 
         console.log("🎉 Initialization complete");
       } catch (error) {
-        console.error("❌ Init error:", error);
+        console.error(" Init error:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    init();
-
-    // Auth state listener
+    // Auth state listener — subscribe first so we don't miss events that
+    // happen during URL-based OAuth redirects (detectSessionInUrl)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("🔄 Auth state changed:", event);
+      try {
+        console.log("🔄 Auth state changed:", event);
 
-      if (!session) {
-        setUser(null);
-        setIsTwitterConnected(false);
-      } else {
+        if (!session) {
+          // Signed out or no session
+          setUser(null);
+          setIsTwitterConnected(false);
+          setLoading(false);
+          return;
+        }
+
+        // Refresh user data from DB
         await hydrateUser(session.user.id);
 
+        // Re-check identities from auth service
         const { data: userData } = await supabase.auth.getUser();
         const connected = userData.user?.identities?.some(
           (i) => i.provider === "twitter"
         );
         setIsTwitterConnected(!!connected);
 
-        // If Twitter just connected, update database
-        if (
-          event === "SIGNED_IN" &&
-          connected &&
-          user &&
-          !user.twitter_connected
-        ) {
-          const twitterIdentity = userData.user?.identities?.find(
-            (i) => i.provider === "twitter"
-          );
+        // If Twitter just connected, update database by fetching a fresh user
+        if (event === "SIGNED_IN" && connected) {
+          const { data: freshUser } = await supabase
+            .from("users")
+            .select("*")
+            .eq("id", session.user.id)
+            .maybeSingle();
 
-          if (twitterIdentity) {
-            await supabase.rpc("connect_twitter", {
-              p_user_id: session.user.id,
-              p_twitter_username: twitterIdentity.identity_data?.user_name,
-              p_twitter_avatar: twitterIdentity.identity_data?.avatar_url,
-            });
-            await hydrateUser(session.user.id);
+          if (freshUser && !freshUser.twitter_connected) {
+            const twitterIdentity = userData.user?.identities?.find(
+              (i) => i.provider === "twitter"
+            );
+
+            if (twitterIdentity) {
+              await supabase.rpc("connect_twitter", {
+                p_user_id: session.user.id,
+                p_twitter_username: twitterIdentity.identity_data?.user_name,
+                p_twitter_avatar: twitterIdentity.identity_data?.avatar_url,
+              });
+              await hydrateUser(session.user.id);
+            }
           }
         }
+      } catch (err) {
+        console.error("Error in auth state handler:", err);
+      } finally {
+        setLoading(false);
       }
     });
+
+    // Now run initialization flow
+    init();
 
     return () => subscription.unsubscribe();
   }, [hydrateUser]);
