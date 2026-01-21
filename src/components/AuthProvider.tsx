@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }: Props) => {
       console.log("✅ User data fetched:", data);
       setUser(data);
     } catch (error) {
-      console.error("❌ Error hydrating user:", error);
+      console.error("Error hydrating user:", error);
     }
   }, []);
 
