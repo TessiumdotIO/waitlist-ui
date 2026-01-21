@@ -61,6 +61,42 @@ export const AuthProvider = ({ children }: Props) => {
 
         if (!authUser) {
           console.log("❌ No auth user found");
+
+          // If there's a leftover token in localStorage but getSession returned
+          // null, it might be corrupted or expired and preventing proper
+          // restoration. Clear it and log for debugging. This handles cases
+          // where users must clear cache to recover.
+          try {
+            const stored =
+              typeof window !== "undefined"
+                ? window.localStorage.getItem("supabase.auth.token")
+                : null;
+
+            if (stored) {
+              try {
+                JSON.parse(stored);
+                console.warn(
+                  "⚠️ Found stored supabase token but no active session — clearing token to recover"
+                );
+              } catch (e) {
+                console.warn(
+                  "⚠️ Supabase token in localStorage appears corrupted — removing it",
+                  e
+                );
+              }
+
+              window.localStorage.removeItem("supabase.auth.token");
+              // Also try to clear any internal state
+              try {
+                await supabase.auth.signOut();
+              } catch (e) {
+                console.warn("Error signing out while clearing token:", e);
+              }
+            }
+          } catch (e) {
+            console.error("Error checking localStorage for supabase token:", e);
+          }
+
           setLoading(false);
           return;
         }
@@ -256,7 +292,7 @@ export const AuthProvider = ({ children }: Props) => {
     return () => {
       channel.unsubscribe();
     };
-  }, [user?.id]);
+  }, [user]);
 
   // Auto-save points every 5 seconds
   useEffect(() => {
@@ -271,7 +307,7 @@ export const AuthProvider = ({ children }: Props) => {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [user?.id]);
+  }, [user]);
 
   const refresh = useCallback(async () => {
     if (user) await hydrateUser(user.id);
