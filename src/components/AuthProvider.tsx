@@ -12,27 +12,36 @@ interface Props {
 export const AuthProvider = ({ children }: Props) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isValidUser, setIsValidUser] = useState(false);
   const [isTwitterConnected, setIsTwitterConnected] = useState(false);
 
   /**
-   * Fetch user from DB (DB user is guaranteed to exist)
+   * Fetch user from DB and handle non-existence
    */
   const hydrateUser = useCallback(async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      const { data: dbUser } = await supabase
         .from("users")
         .select("*")
         .eq("id", userId)
-        .single();
+        .maybeSingle(); // ✅ maybeSingle avoids error if user deleted
 
-      if (error) {
-        console.error("❌ Failed to hydrate user:", error);
-        return;
+      if (!dbUser) {
+        setUser(null);
+        setIsValidUser(false);
+        setIsTwitterConnected(false);
+        return null;
+      } else {
+        setUser(dbUser);
+        setIsValidUser(true);
+        return dbUser;
       }
-
-      setUser(data);
     } catch (err) {
       console.error("❌ Unexpected hydrate error:", err);
+      setUser(null);
+      setIsValidUser(false);
+      setIsTwitterConnected(false);
+      return null;
     }
   }, []);
 
@@ -48,22 +57,28 @@ export const AuthProvider = ({ children }: Props) => {
 
         if (!session?.user) {
           setUser(null);
+          setIsValidUser(false);
           setLoading(false);
           return;
         }
 
-        // Twitter connection state
+        // Check Twitter connection
         const { data: authData } = await supabase.auth.getUser();
         const connected =
           authData.user?.identities?.some((i) => i.provider === "twitter") ??
           false;
-
         setIsTwitterConnected(connected);
 
-        // DB user always exists
-        await hydrateUser(session.user.id);
+        // Hydrate DB user
+        const dbUser = await hydrateUser(session.user.id);
+        if (!dbUser) {
+          // Optional: sign out invalid session
+          await supabase.auth.signOut();
+          setLoading(false);
+          return;
+        }
 
-        // Handle referral once on initial load
+        // Handle referral
         const ref = new URLSearchParams(window.location.search).get("ref");
         if (ref) {
           await supabase.rpc("handle_referral", {
@@ -80,14 +95,13 @@ export const AuthProvider = ({ children }: Props) => {
 
     init();
 
-    /**
-     * Auth state listener
-     */
+    // Listen to auth state changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!session?.user) {
         setUser(null);
+        setIsValidUser(false);
         setIsTwitterConnected(false);
         return;
       }
@@ -96,14 +110,18 @@ export const AuthProvider = ({ children }: Props) => {
       const connected =
         authData.user?.identities?.some((i) => i.provider === "twitter") ??
         false;
-
       setIsTwitterConnected(connected);
 
-      await hydrateUser(session.user.id);
+      const dbUser = await hydrateUser(session.user.id);
+      if (!dbUser) {
+        // Optional: sign out invalid session
+        await supabase.auth.signOut();
+        return;
+      }
 
       // Twitter connect handling
       if (connected) {
-        const twitter = authData.user?.identities?.find(
+        const twitter = authData.user?.identities.find(
           (i) => i.provider === "twitter"
         );
 
@@ -114,6 +132,7 @@ export const AuthProvider = ({ children }: Props) => {
             p_twitter_avatar: twitter.identity_data?.avatar_url,
           });
 
+          // Refresh user after Twitter connect
           await hydrateUser(session.user.id);
         }
       }
@@ -128,7 +147,7 @@ export const AuthProvider = ({ children }: Props) => {
    * Realtime DB updates
    */
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;
 
     const channel = supabase
       .channel(`user-updates-${user.id}`)
@@ -166,6 +185,7 @@ export const AuthProvider = ({ children }: Props) => {
         user,
         setUser,
         loading,
+        isValidUser,
         refresh,
         isTwitterConnected,
       }}

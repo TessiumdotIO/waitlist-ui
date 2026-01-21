@@ -81,7 +81,7 @@ const Hero = () => {
   const heroRef = useRef<HTMLDivElement>(null);
   const cursorRef = useRef<HTMLDivElement>(null);
   const [showModal, setShowModal] = useState(false);
-  const { user, loading, refresh, isTwitterConnected } = useAuth();
+  const { user, loading, refresh, isTwitterConnected, isValidUser } = useAuth();
   const [leaderboard, setLeaderboard] = useState<User[]>([]);
   const [referralLeaderboard, setReferralLeaderboard] = useState<User[]>([]);
   const [userPosition, setUserPosition] = useState<number | null>(null);
@@ -136,7 +136,7 @@ const Hero = () => {
   };
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !isValidUser) return;
 
     const loadLeaderboard = async () => {
       const { data } = await supabase
@@ -177,7 +177,7 @@ const Hero = () => {
       clearInterval(interval);
       channel.unsubscribe();
     };
-  }, [user, activeLeaderboard]);
+  }, [user, isValidUser, activeLeaderboard]);
 
   const buildTweetUrl = (user: User) => {
     const referralLink = `https://waitlist.tessium.io?ref=${user.referral_code}`;
@@ -192,7 +192,7 @@ const Hero = () => {
   };
 
   const handleTaskClick = async (task: TwitterTask) => {
-    if (!user) return;
+    if (!user || !isValidUser) return;
     if (user.tasks_completed.includes(task.id)) return;
 
     let url = task.url;
@@ -363,7 +363,7 @@ const Hero = () => {
             </div>
           </div>
         </div>
-      ) : !user ? (
+      ) : !isValidUser ? (
         <div className="max-w-7xl mx-auto w-full h-[450px] md:h-auto flex flex-col md:block items-center justify-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
