@@ -14,6 +14,7 @@ import {
 import { motion } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import { ShootingStar, TwitterTask, User } from "./types";
+import { generateDisplayName } from "@/lib/nameGenerator";
 import { usePointsTicker } from "@/hooks/usePointsTicker";
 import { useAuth } from "./AuthContext";
 
@@ -583,7 +584,7 @@ const Hero = () => {
                                   <img
                                     src={entry.avatar_url}
                                     alt={
-                                      entry.display_name ||
+                                      generateDisplayName(entry.id) ||
                                       entry.email ||
                                       "User"
                                     }
@@ -593,7 +594,7 @@ const Hero = () => {
 
                                 <div>
                                   <div className="font-semibold md:text-lg text-sm">
-                                    {entry.display_name}
+                                    {generateDisplayName(entry.id)}
                                   </div>
                                 </div>
                               </div>
@@ -644,7 +645,7 @@ const Hero = () => {
                                   <img
                                     src={entry.avatar_url}
                                     alt={
-                                      entry.display_name ||
+                                      generateDisplayName(entry.id) ||
                                       entry.email ||
                                       "User"
                                     }
@@ -654,7 +655,7 @@ const Hero = () => {
 
                                 <div>
                                   <div className="font-semibold md:text-lg text-sm">
-                                    {entry.display_name}
+                                    {generateDisplayName(entry.id)}
                                   </div>
                                 </div>
                               </div>
