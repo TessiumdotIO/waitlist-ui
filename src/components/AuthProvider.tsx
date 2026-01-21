@@ -303,98 +303,110 @@ export const AuthProvider = ({ children }: Props) => {
           return;
         }
 
-        // Refresh user data from DB (use timeout wrapper)
+        // Immediately set a lightweight user from the session so the UI
+        // can render and stop showing the skeleton. Then hydrate in the
+        // background (non-blocking) to populate full user data.
         try {
-          await runWithTimeout(hydrateUser(session.user.id), 8000);
-        } catch (e) {
-          console.warn("Hydrate user (auth handler) timed out or failed:", e);
+          const quickUser: User = {
+            id: session.user.id,
+            email: session.user.email || undefined,
+            display_name:
+              session.user.user_metadata?.full_name ||
+              generateDisplayName(session.user.id),
+            avatar_url: session.user.user_metadata?.avatar_url || undefined,
+            points: 0,
+            points_rate: 0.1,
+            twitter_connected: false,
+            tasks_completed: [],
+            referral_code: "",
+            referral_count: 0,
+            created_at: new Date().toISOString(),
+          } as User;
 
-          // If this was part of a provider flow (e.g. connecting Twitter),
-          // don't immediately sign the user out. Check identities — if
-          // Twitter was just connected, retry hydrate with a longer timeout
-          // in the background and allow the flow to continue.
-          try {
-            const { data: userData } = await supabase.auth.getUser();
-            const connected = userData.user?.identities?.some(
-              (i) => i.provider === "twitter"
-            );
+          setUser(quickUser);
+          setLoading(false);
 
-            if (connected) {
-              console.log(
-                "Hydrate timed out but Twitter identity present — retrying hydrate with longer timeout"
-              );
-              setIsTwitterConnected(true);
-
-              // Try one longer retry (do not block UI)
-              (async () => {
-                try {
-                  await runWithTimeout(hydrateUser(session.user.id), 15000);
-                } catch (err) {
-                  console.warn("Retry hydrate failed:", err);
-                }
-              })();
-            } else {
-              // Not a provider-connect flow — treat as unrecoverable and
-              // sign the user out and redirect them to the landing page so
-              // they can sign in again.
-              try {
-                await supabase.auth.signOut();
-              } catch (signOutErr) {
-                console.warn(
-                  "Error signing out after hydrate failure:",
-                  signOutErr
-                );
-              }
-              window.location.href = "/";
-              return;
-            }
-          } catch (identErr) {
-            console.error(
-              "Error checking identities after hydrate failure:",
-              identErr
-            );
+          // Background hydrate and connect_twitter handling
+          (async () => {
             try {
-              await supabase.auth.signOut();
-            } catch (signOutErr) {
-              console.warn(
-                "Error signing out after hydrate failure:",
-                signOutErr
+              await runWithTimeout(hydrateUser(session.user.id), 15000);
+
+              // After hydrate attempt, re-check identities and DB row for twitter
+              const { data: userData } = await supabase.auth.getUser();
+              const connected = userData.user?.identities?.some(
+                (i: { provider?: string }) => i.provider === "twitter"
               );
+              setIsTwitterConnected(!!connected);
+
+              // If Twitter just connected, update database
+              if (connected) {
+                // fetch fresh DB user to avoid stale state
+                const { data: freshUser } = await supabase
+                  .from("users")
+                  .select("*")
+                  .eq("id", session.user.id)
+                  .maybeSingle();
+
+                if (freshUser && !freshUser.twitter_connected) {
+                  const twitterIdentity = userData.user?.identities?.find(
+                    (i: { provider?: string }) => i.provider === "twitter"
+                  );
+
+                  if (twitterIdentity) {
+                    await supabase.rpc("connect_twitter", {
+                      p_user_id: session.user.id,
+                      p_twitter_username:
+                        twitterIdentity.identity_data?.user_name,
+                      p_twitter_avatar:
+                        twitterIdentity.identity_data?.avatar_url,
+                    });
+                    await hydrateUser(session.user.id);
+                  }
+                }
+              }
+            } catch (err) {
+              console.warn("Background hydrate/connect attempt failed:", err);
+
+              // If background hydrate fails and there's no provider connect
+              // in progress, sign out and redirect to landing to recover.
+              try {
+                const { data: userData } = await supabase.auth.getUser();
+                const connected = userData.user?.identities?.some(
+                  (i: { provider?: string }) => i.provider === "twitter"
+                );
+
+                if (!connected) {
+                  try {
+                    await supabase.auth.signOut();
+                  } catch (signOutErr) {
+                    console.warn(
+                      "Error signing out after background failure:",
+                      signOutErr
+                    );
+                  }
+                  window.location.href = "/";
+                }
+              } catch (identErr) {
+                console.error(
+                  "Error checking identities after background failure:",
+                  identErr
+                );
+                try {
+                  await supabase.auth.signOut();
+                } catch (signOutErr) {
+                  console.warn(
+                    "Error signing out after background failure:",
+                    signOutErr
+                  );
+                }
+                window.location.href = "/";
+              }
             }
-            window.location.href = "/";
-            return;
-          }
-        }
-
-        // Re-check identities from auth service
-        const { data: userData } = await supabase.auth.getUser();
-        const connected = userData.user?.identities?.some(
-          (i) => i.provider === "twitter"
-        );
-        setIsTwitterConnected(!!connected);
-
-        // If Twitter just connected, update database by fetching a fresh user
-        if (event === "SIGNED_IN" && connected) {
-          const { data: freshUser } = await supabase
-            .from("users")
-            .select("*")
-            .eq("id", session.user.id)
-            .maybeSingle();
-
-          if (freshUser && !freshUser.twitter_connected) {
-            const twitterIdentity = userData.user?.identities?.find(
-              (i) => i.provider === "twitter"
-            );
-
-            if (twitterIdentity) {
-              await supabase.rpc("connect_twitter", {
-                p_user_id: session.user.id,
-                p_twitter_username: twitterIdentity.identity_data?.user_name,
-                p_twitter_avatar: twitterIdentity.identity_data?.avatar_url,
-              });
-              await hydrateUser(session.user.id);
-            }
-          }
+          })();
+        } catch (e) {
+          console.error("Error in auth handler quick-set:", e);
+          setUser(null);
+          setLoading(false);
         }
       } catch (err) {
         console.error("Error in auth state handler:", err);
