@@ -164,7 +164,7 @@ export const AuthProvider = ({ children }: Props) => {
 
         console.log("🎉 Initialization complete");
       } catch (error) {
-        console.error("❌ Init error:", error);
+        console.error(" Init error:", error);
       } finally {
         setLoading(false);
       }
