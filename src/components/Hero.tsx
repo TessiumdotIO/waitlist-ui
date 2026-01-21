@@ -81,7 +81,7 @@ const Hero = () => {
   const heroRef = useRef<HTMLDivElement>(null);
   const cursorRef = useRef<HTMLDivElement>(null);
   const [showModal, setShowModal] = useState(false);
-  const { user, loading, refresh, isTwitterConnected, isValidUser } = useAuth();
+  const { user, loading, refresh, isTwitterConnected } = useAuth();
   const [leaderboard, setLeaderboard] = useState<User[]>([]);
   const [referralLeaderboard, setReferralLeaderboard] = useState<User[]>([]);
   const [userPosition, setUserPosition] = useState<number | null>(null);
@@ -136,7 +136,7 @@ const Hero = () => {
   };
 
   useEffect(() => {
-    if (!user || !isValidUser) return;
+    if (!user) return;
 
     const loadLeaderboard = async () => {
       const { data } = await supabase
@@ -177,7 +177,7 @@ const Hero = () => {
       clearInterval(interval);
       channel.unsubscribe();
     };
-  }, [user, isValidUser, activeLeaderboard]);
+  }, [user, activeLeaderboard]);
 
   const buildTweetUrl = (user: User) => {
     const referralLink = `https://waitlist.tessium.io?ref=${user.referral_code}`;
@@ -192,7 +192,7 @@ const Hero = () => {
   };
 
   const handleTaskClick = async (task: TwitterTask) => {
-    if (!user || !isValidUser) return;
+    if (!user) return;
     if (user.tasks_completed.includes(task.id)) return;
 
     let url = task.url;
@@ -363,7 +363,7 @@ const Hero = () => {
             </div>
           </div>
         </div>
-      ) : !isValidUser ? (
+      ) : !user ? (
         <div className="max-w-7xl mx-auto w-full h-[450px] md:h-auto flex flex-col md:block items-center justify-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -473,7 +473,7 @@ const Hero = () => {
               </div>
             </div>
 
-            {!isTwitterConnected ? (
+            {!user.twitter_connected ? (
               <button
                 onClick={handleTwitterConnect}
                 className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-4 rounded-xl font-semibold transition-all mb-6 mt-7 mx-20 flex items-center justify-center gap-3 shadow-lg transform hover:scale-105"
