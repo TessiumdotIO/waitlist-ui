@@ -17,8 +17,16 @@ export const AuthProvider = ({ children }: Props) => {
 
   const hydrateUser = useCallback(async (id: string) => {
     try {
+      console.log("💧 Hydrating user:", id);
+
       // Sync points first
-      await supabase.rpc("sync_points", { p_user_id: id });
+      const { error: syncError } = await supabase.rpc("sync_points", {
+        p_user_id: id,
+      });
+
+      if (syncError) {
+        console.error("❌ Sync points error:", syncError);
+      }
 
       // Fetch updated user data
       const { data, error } = await supabase
@@ -27,22 +35,32 @@ export const AuthProvider = ({ children }: Props) => {
         .eq("id", id)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("❌ Fetch user error:", error);
+        throw error;
+      }
+
+      console.log("✅ User data fetched:", data);
       setUser(data);
     } catch (error) {
-      console.error("Error hydrating user:", error);
+      console.error("❌ Error hydrating user:", error);
     }
   }, []);
 
   useEffect(() => {
     const init = async () => {
       try {
+        console.log("🔍 Starting auth initialization...");
+
         const {
           data: { session },
         } = await supabase.auth.getSession();
         const authUser = session?.user;
 
+        console.log("📧 Auth user:", authUser?.email, authUser?.id);
+
         if (!authUser) {
+          console.log("❌ No auth user found");
           setLoading(false);
           return;
         }
@@ -53,46 +71,100 @@ export const AuthProvider = ({ children }: Props) => {
           (i) => i.provider === "twitter"
         );
         setIsTwitterConnected(!!connected);
+        console.log("🐦 Twitter connected:", connected);
 
         // Check if user exists in database
-        const { data: dbUser } = await supabase
+        console.log("🔍 Checking if user exists in DB...");
+        const { data: dbUser, error: fetchError } = await supabase
           .from("users")
           .select("id")
           .eq("id", authUser.id)
-          .single();
+          .maybeSingle(); // Use maybeSingle instead of single to handle 0 rows
+
+        console.log("💾 DB user exists:", !!dbUser, fetchError);
 
         // Create user if doesn't exist
         if (!dbUser) {
+          console.log("📝 Creating new user in database...");
+
           const referralCode = Math.random()
             .toString(36)
             .slice(2, 10)
             .toUpperCase();
 
-          await supabase.from("users").insert({
+          const newUser = {
             id: authUser.id,
             email: authUser.email,
             display_name: generateDisplayName(authUser.id),
-            avatar_url: authUser.user_metadata.avatar_url,
+            avatar_url: authUser.user_metadata.avatar_url || null,
             referral_code: referralCode,
             points_rate: 0.1,
-          });
+            points: 0,
+            twitter_connected: false,
+            tasks_completed: [],
+            referral_count: 0,
+          };
+
+          console.log("📝 Inserting user:", newUser);
+
+          const { data: insertedUser, error: insertError } = await supabase
+            .from("users")
+            .insert(newUser)
+            .select()
+            .single();
+
+          if (insertError) {
+            console.error("❌ Insert error:", insertError);
+            console.error(
+              "❌ Insert error details:",
+              JSON.stringify(insertError, null, 2)
+            );
+
+            // Try to give user more info about what went wrong
+            if (insertError.code === "23505") {
+              console.error(
+                "❌ Duplicate key - user might already exist or referral code collision"
+              );
+            } else if (insertError.code === "23503") {
+              console.error(
+                "❌ Foreign key violation - auth user might not exist"
+              );
+            } else if (insertError.message?.includes("policy")) {
+              console.error(
+                "❌ RLS policy blocking insert - need to fix permissions"
+              );
+            }
+
+            throw insertError;
+          }
+
+          console.log("✅ User created successfully:", insertedUser);
         }
 
         // Load user data
+        console.log("💧 Loading user data...");
         await hydrateUser(authUser.id);
 
         // Handle referral if present
         const ref = new URLSearchParams(window.location.search).get("ref");
         if (ref) {
-          await supabase.rpc("handle_referral", {
+          console.log("🎁 Processing referral code:", ref);
+          const { error: refError } = await supabase.rpc("handle_referral", {
             p_referral_code: ref,
             p_new_user_id: authUser.id,
           });
-          // Refresh user data after referral
-          await hydrateUser(authUser.id);
+
+          if (refError) {
+            console.error("❌ Referral error:", refError);
+          } else {
+            console.log("✅ Referral processed");
+            await hydrateUser(authUser.id);
+          }
         }
+
+        console.log("🎉 Initialization complete");
       } catch (error) {
-        console.error("Init error:", error);
+        console.error("❌ Init error:", error);
       } finally {
         setLoading(false);
       }
@@ -104,6 +176,8 @@ export const AuthProvider = ({ children }: Props) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("🔄 Auth state changed:", event);
+
       if (!session) {
         setUser(null);
         setIsTwitterConnected(false);
@@ -157,6 +231,7 @@ export const AuthProvider = ({ children }: Props) => {
           filter: `id=eq.${user.id}`,
         },
         (payload) => {
+          console.log("📡 Real-time update:", payload.new);
           setUser(payload.new as User);
         }
       )
@@ -175,7 +250,7 @@ export const AuthProvider = ({ children }: Props) => {
       try {
         await supabase.rpc("sync_points", { p_user_id: user.id });
       } catch (error) {
-        console.error("Auto-save error:", error);
+        console.error("❌ Auto-save error:", error);
       }
     }, 5000);
 
