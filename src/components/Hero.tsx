@@ -71,7 +71,6 @@ const TWITTER_TASKS: TwitterTask[] = [
 const TWITTER_CONNECT_REWARD = 0.5;
 const REFERRAL_BONUS = 0.5;
 
-// Skeleton Components
 const SkeletonBox = ({ className = "" }: { className?: string }) => (
   <div className={`animate-pulse bg-white bg-opacity-5 rounded ${className}`} />
 );
