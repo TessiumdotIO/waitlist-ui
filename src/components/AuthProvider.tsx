@@ -302,7 +302,62 @@ export const AuthProvider = ({ children }: Props) => {
           await runWithTimeout(hydrateUser(session.user.id), 8000);
         } catch (e) {
           console.warn("Hydrate user (auth handler) timed out or failed:", e);
-          setUser(null);
+
+          // If this was part of a provider flow (e.g. connecting Twitter),
+          // don't immediately sign the user out. Check identities — if
+          // Twitter was just connected, retry hydrate with a longer timeout
+          // in the background and allow the flow to continue.
+          try {
+            const { data: userData } = await supabase.auth.getUser();
+            const connected = userData.user?.identities?.some(
+              (i) => i.provider === "twitter"
+            );
+
+            if (connected) {
+              console.log(
+                "Hydrate timed out but Twitter identity present — retrying hydrate with longer timeout"
+              );
+              setIsTwitterConnected(true);
+
+              // Try one longer retry (do not block UI)
+              (async () => {
+                try {
+                  await runWithTimeout(hydrateUser(session.user.id), 15000);
+                } catch (err) {
+                  console.warn("Retry hydrate failed:", err);
+                }
+              })();
+            } else {
+              // Not a provider-connect flow — treat as unrecoverable and
+              // sign the user out and redirect them to the landing page so
+              // they can sign in again.
+              try {
+                await supabase.auth.signOut();
+              } catch (signOutErr) {
+                console.warn(
+                  "Error signing out after hydrate failure:",
+                  signOutErr
+                );
+              }
+              window.location.href = "/";
+              return;
+            }
+          } catch (identErr) {
+            console.error(
+              "Error checking identities after hydrate failure:",
+              identErr
+            );
+            try {
+              await supabase.auth.signOut();
+            } catch (signOutErr) {
+              console.warn(
+                "Error signing out after hydrate failure:",
+                signOutErr
+              );
+            }
+            window.location.href = "/";
+            return;
+          }
         }
 
         // Re-check identities from auth service
