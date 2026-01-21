@@ -118,7 +118,7 @@ const Hero = () => {
   };
 
   const handleTwitterConnect = async () => {
-    if (!user) return;
+    if (!user?.id) return;  // Added null check for user.id
 
     try {
       const { error } = await supabase.auth.signInWithOAuth({
@@ -136,7 +136,7 @@ const Hero = () => {
   };
 
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;  // Early return if no user.id
 
     const loadLeaderboard = async () => {
       const { data } = await supabase
@@ -177,7 +177,7 @@ const Hero = () => {
       clearInterval(interval);
       channel.unsubscribe();
     };
-  }, [user, activeLeaderboard]);
+  }, [user?.id, activeLeaderboard]);  // Added user?.id to deps
 
   const buildTweetUrl = (user: User) => {
     const referralLink = `https://waitlist.tessium.io?ref=${user.referral_code}`;
@@ -192,7 +192,7 @@ const Hero = () => {
   };
 
   const handleTaskClick = async (task: TwitterTask) => {
-    if (!user) return;
+    if (!user?.id) return;  // Added null check
     if (user.tasks_completed.includes(task.id)) return;
 
     let url = task.url;
@@ -218,7 +218,8 @@ const Hero = () => {
   };
 
   const copyReferralLink = () => {
-    const link = `${window.location.origin}?ref=${user?.referral_code}`;
+    if (!user?.referral_code) return;  // Added null check
+    const link = `${window.location.origin}?ref=${user.referral_code}`;
     navigator.clipboard.writeText(link);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);

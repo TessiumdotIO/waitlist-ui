@@ -17,20 +17,21 @@ export const AuthProvider = ({ children }: Props) => {
 
   const hydrateUser = useCallback(async (id: string) => {
     try {
-      // Sync points first
+      // Sync points first (if row exists; RPC will no-op if not)
       await supabase.rpc("sync_points", { p_user_id: id });
 
-      // Fetch updated user data
+      // Fetch updated user data with .maybeSingle() to handle missing row gracefully
       const { data, error } = await supabase
         .from("users")
         .select("*")
         .eq("id", id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
-      setUser(data);
+      setUser(data); // Will be null if no row, which is fine—we'll handle in UI
     } catch (error) {
       console.error("Error hydrating user:", error);
+      setUser(null); // Ensure user is null on failure
     }
   }, []);
 
@@ -54,28 +55,52 @@ export const AuthProvider = ({ children }: Props) => {
         );
         setIsTwitterConnected(!!connected);
 
-        // Check if user exists in database
+        // Check if user exists in database with .maybeSingle()
         const { data: dbUser } = await supabase
           .from("users")
           .select("id")
           .eq("id", authUser.id)
-          .single();
+          .maybeSingle();
 
-        // Create user if doesn't exist
+        // Create user if doesn't exist, with retry for unique referral_code
         if (!dbUser) {
-          const referralCode = Math.random()
-            .toString(36)
-            .slice(2, 10)
-            .toUpperCase();
+          let created = false;
+          let attempts = 0;
+          while (!created && attempts < 5) {
+            const referralCode = Math.random()
+              .toString(36)
+              .slice(2, 10)
+              .toUpperCase();
 
-          await supabase.from("users").insert({
-            id: authUser.id,
-            email: authUser.email,
-            display_name: generateDisplayName(authUser.id),
-            avatar_url: authUser.user_metadata.avatar_url,
-            referral_code: referralCode,
-            points_rate: 0.1,
-          });
+            const { error } = await supabase.from("users").insert({
+              id: authUser.id,
+              email: authUser.email,
+              display_name: generateDisplayName(authUser.id),
+              avatar_url: authUser.user_metadata.avatar_url,
+              referral_code: referralCode,
+              points_rate: 0.1,
+            });
+
+            if (!error) {
+              created = true;
+            } else if (error.code === "23505") {
+              // Postgres unique violation
+              console.warn(
+                `Referral code collision on attempt ${
+                  attempts + 1
+                }: ${referralCode}`
+              );
+              attempts++;
+            } else {
+              throw error; // Other errors: bail out
+            }
+          }
+
+          if (!created) {
+            throw new Error(
+              "Failed to create unique referral code after retries"
+            );
+          }
         }
 
         // Load user data
