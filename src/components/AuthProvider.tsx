@@ -59,6 +59,17 @@ export const AuthProvider = ({ children }: Props) => {
 
         console.log("📧 Auth user:", authUser?.email, authUser?.id);
 
+        // Diagnostic: show stored token (if any) to help debug persistence issues
+        try {
+          const stored =
+            typeof window !== "undefined"
+              ? window.localStorage.getItem("supabase.auth.token")
+              : null;
+          console.log("📦 Stored supabase.auth.token (raw):", stored);
+        } catch (e) {
+          console.warn("Could not read localStorage for debug:", e);
+        }
+
         if (!authUser) {
           console.log("❌ No auth user found");
 
@@ -91,6 +102,14 @@ export const AuthProvider = ({ children }: Props) => {
                 await supabase.auth.signOut();
               } catch (e) {
                 console.warn("Error signing out while clearing token:", e);
+              }
+
+              // Retry getSession once after clearing token to see if session can be restored
+              try {
+                const retry = await supabase.auth.getSession();
+                console.log("🔁 After clearing token, getSession():", retry);
+              } catch (e) {
+                console.warn("Retry getSession failed:", e);
               }
             }
           } catch (e) {
