@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useState, useEffect, useCallback } from "react";
+import { ReactNode, useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { AuthContext } from "./AuthContext";
 import { User } from "./types";
@@ -14,6 +14,12 @@ export const AuthProvider = ({ children }: Props) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isTwitterConnected, setIsTwitterConnected] = useState(false);
+  const loadingRef = useRef<boolean>(true);
+
+  // keep a mutable ref in sync with loading so timers can read latest value
+  useEffect(() => {
+    loadingRef.current = loading;
+  }, [loading]);
 
   const hydrateUser = useCallback(async (id: string) => {
     try {
@@ -400,7 +406,64 @@ export const AuthProvider = ({ children }: Props) => {
     // Now run initialization flow
     init();
 
-    return () => subscription.unsubscribe();
+    // Failsafe: if loading is still true after 12s, decide what to do.
+    const failTimer = setTimeout(async () => {
+      if (!loadingRef.current) return;
+
+      console.warn("⏱️ Auth initialization still loading after timeout");
+
+      // If user appears to be connecting a provider (twitter), try one
+      // longer background retry, otherwise sign out and redirect to landing.
+      try {
+        const { data: userData } = await supabase.auth.getUser();
+        const hasTwitter = userData.user?.identities?.some(
+          (i: { provider?: string }) => i.provider === "twitter"
+        );
+
+        if (hasTwitter) {
+          console.log(
+            "Auth init timeout but twitter identity present — retrying hydrate in background"
+          );
+          // one background retry with longer timeout
+          (async () => {
+            try {
+              await runWithTimeout(hydrateUser(userData.user.id), 20000);
+            } catch (err) {
+              console.warn("Background retry after timeout failed:", err);
+              try {
+                await supabase.auth.signOut();
+              } catch (e) {
+                console.warn("Error signing out after retry failure:", e);
+              }
+              window.location.href = "/";
+            }
+          })();
+        } else {
+          console.log(
+            "No provider flow detected — signing out and redirecting"
+          );
+          try {
+            await supabase.auth.signOut();
+          } catch (e) {
+            console.warn("Error signing out after timeout:", e);
+          }
+          window.location.href = "/";
+        }
+      } catch (err) {
+        console.error("Error during auth init timeout handling:", err);
+        try {
+          await supabase.auth.signOut();
+        } catch (e) {
+          console.warn("Error signing out after timeout error:", e);
+        }
+        window.location.href = "/";
+      }
+    }, 12000);
+
+    return () => {
+      clearTimeout(failTimer);
+      subscription.unsubscribe();
+    };
   }, [hydrateUser, runWithTimeout]);
 
   // Real-time subscription for user updates
