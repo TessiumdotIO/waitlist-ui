@@ -20,6 +20,10 @@ export const AuthProvider = ({ children }: Props) => {
       console.log("💧 Hydrating user:", id);
 
       // Sync points first
+
+      // Call RPC to sync points. Prefer functions that return the updated
+      // user row (or JSON) — if the RPC returns data, use it directly to
+      // hydrate the user, otherwise fall back to selecting from `users`.
       const syncRes = await supabase.rpc("sync_points", {
         p_user_id: id,
       });
@@ -30,7 +34,23 @@ export const AuthProvider = ({ children }: Props) => {
         console.log("🔁 sync_points result:", syncRes);
       }
 
-      // Fetch updated user data (use maybeSingle to avoid throwing when no row)
+      // If the RPC returned a payload (e.g. the updated user row or JSON),
+      // use that to hydrate immediately.
+      if (syncRes && syncRes.data) {
+        // rpc may return an array (table) or an object (json); pick the
+        // first element if it's an array.
+        const returned = Array.isArray(syncRes.data)
+          ? syncRes.data[0]
+          : syncRes.data;
+
+        if (returned) {
+          console.log("✅ sync_points returned user:", returned);
+          setUser(returned as User);
+          return true;
+        }
+      }
+
+      // Fallback: Fetch updated user data (use maybeSingle to avoid throwing when no row)
       const { data, error } = await supabase
         .from("users")
         .select("*")
