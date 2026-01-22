@@ -15,10 +15,11 @@ const Footer: React.FC = () => {
           <div className="md:col-span-2">
             <div className="flex items-center gap-2 mb-4">
               <div className="flex items-center text-accent">
-                <img src="/diamond.png" className="h-5 w-5 m-1" alt="LOGO" />
-                <span className="text-accent font-bold text-2xl font-display">
-                  Tessium
-                </span>
+                <img
+                  src="/tess-logo.svg"
+                  className="w-40 sm:h-20 h-16 m-1"
+                  alt="LOGO"
+                />
               </div>
             </div>
 
