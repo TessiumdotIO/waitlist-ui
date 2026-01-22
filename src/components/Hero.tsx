@@ -28,6 +28,14 @@ const TWITTER_TASKS: TwitterTask[] = [
     reward: 0.2,
   },
   {
+    id: "comment_main",
+    name: "Like, Comment and RT the announcement",
+    url: "https://x.com/Tessium_io/status/2014352397569503253",
+    isShareQuest: false,
+    type: "twitter_interact",
+    reward: 0.3,
+  },
+  {
     id: "share_on_twitter",
     name: "Share your referral link on X",
     url: "",
