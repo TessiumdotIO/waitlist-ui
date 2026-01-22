@@ -27,7 +27,7 @@ const NavBar: React.FC = () => {
   return (
     <header
       className={cn(
-        "fixed sm:top-0 top-2 sm:left-0 left-2 sm:right-0 right-2 rounded-full sm:rounded-none z-50 px-6 lg:px-10 transition-all duration-300 py-4",
+        "fixed sm:top-0 top-2 sm:left-0 left-2 sm:right-0 right-2 rounded-full sm:rounded-none z-50 px-6 lg:px-10 transition-all duration-300",
         scrolled
           ? "backdrop-blur-md bg-background/80 shadow-sm"
           : "bg-transparent"
@@ -36,10 +36,11 @@ const NavBar: React.FC = () => {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="flex items-center text-primary">
-            <img src="/diamond.png" className="h-5 w-5 m-1" alt="LOGO" />
-            <span className="text-accent font-bold text-2xl font-display">
-              Tessium
-            </span>
+            <img
+              src="/tess-logo.svg"
+              className="w-40 sm:h-20 h-16 m-1"
+              alt="LOGO"
+            />
           </div>
         </div>
 
