@@ -115,13 +115,8 @@ const Hero = () => {
 
     const fetchCount = async () => {
       try {
-        const resp = await supabase
-          .from("users")
-          .select("*", { count: "exact", head: true });
-        if (!mounted) return;
-        // supabase client returns .count on the response when head:true
-        const count = (resp as unknown as { count?: number }).count ?? 0;
-        setUsersCount(count);
+      const { data: count, error } = await supabase.rpc('get_user_count_estimate');
+      if (mounted && !error) setUsersCount(count);
       } catch (err) {
         console.error("Error fetching users count:", err);
       } finally {
