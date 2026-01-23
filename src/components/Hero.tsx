@@ -107,6 +107,37 @@ const Hero = () => {
     user?.points_rate ?? 0.1
   );
 
+  const [usersCount, setUsersCount] = useState<number | null>(null);
+  const [usersCountLoading, setUsersCountLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchCount = async () => {
+      try {
+        const resp = await supabase
+          .from("users")
+          .select("*", { count: "exact", head: true });
+        if (!mounted) return;
+        // supabase client returns .count on the response when head:true
+        const count = (resp as unknown as { count?: number }).count ?? 0;
+        setUsersCount(count);
+      } catch (err) {
+        console.error("Error fetching users count:", err);
+      } finally {
+        if (mounted) setUsersCountLoading(false);
+      }
+    };
+
+    fetchCount();
+
+    const interval = setInterval(fetchCount, 20000);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
   const handleGoogleSignIn = async () => {
     setAuthLoading(true);
     try {
@@ -256,15 +287,15 @@ const Hero = () => {
   }));
 
   const pointsDisplay = user
-    ? pointsWithRank.slice(0, 15).some((u) => u.id === user.id)
-      ? pointsWithRank.slice(0, 15)
+    ? pointsWithRank.slice(0, 100).some((u) => u.id === user.id)
+      ? pointsWithRank.slice(0, 100)
       : (() => {
           const currentUser = pointsWithRank.find((u) => u.id === user.id);
           return currentUser
-            ? [currentUser, ...pointsWithRank.slice(0, 14)]
-            : pointsWithRank.slice(0, 15);
+            ? [currentUser, ...pointsWithRank.slice(0, 99)]
+            : pointsWithRank.slice(0, 100);
         })()
-    : pointsWithRank.slice(0, 15);
+    : pointsWithRank.slice(0, 100);
 
   const referralsWithRank = referralLeaderboard.map((u, idx) => ({
     ...u,
@@ -272,15 +303,15 @@ const Hero = () => {
   }));
 
   const referralsDisplay = user
-    ? referralsWithRank.slice(0, 15).some((u) => u.id === user.id)
-      ? referralsWithRank.slice(0, 15)
+    ? referralsWithRank.slice(0, 100).some((u) => u.id === user.id)
+      ? referralsWithRank.slice(0, 100)
       : (() => {
           const currentUser = referralsWithRank.find((u) => u.id === user.id);
           return currentUser
-            ? [currentUser, ...referralsWithRank.slice(0, 14)]
-            : referralsWithRank.slice(0, 15);
+            ? [currentUser, ...referralsWithRank.slice(0, 99)]
+            : referralsWithRank.slice(0, 100);
         })()
-    : referralsWithRank.slice(0, 15);
+    : referralsWithRank.slice(0, 100);
 
   return (
     <section
@@ -445,9 +476,9 @@ const Hero = () => {
               {user.points_rate.toFixed(2)} pts/sec
             </p>
             <p className="md:px-24 px-4 text-center my-7">
-              You're #{userPosition?.toLocaleString() || "..."} on the waitlist
-              for Tessium. Invite others and connect your X to get priority
-              access.
+              You're #{userPosition?.toLocaleString() || "..."} out of{" "}
+              {usersCountLoading ? "0" : usersCount} users on the waitlist for
+              Tessium. Invite others and connect your X to get priority access.
             </p>
 
             <div className="bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl md:p-6 p-3 shadow-xl">
