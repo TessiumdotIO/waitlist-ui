@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { AuthContext } from "./AuthContext";
 import { User } from "./types";
 import { generateDisplayName } from "@/lib/nameGenerator";
+import { PointsCache } from "@/lib/pointsCache";
 
 interface Props {
   children: ReactNode;
@@ -15,6 +16,7 @@ export const AuthProvider = ({ children }: Props) => {
   const [loading, setLoading] = useState(true);
   const [isTwitterConnected, setIsTwitterConnected] = useState(false);
   const loadingRef = useRef<boolean>(true);
+  const lastSyncRef = useRef<number>(0);
 
   // keep a mutable ref in sync with loading so timers can read latest value
   useEffect(() => {
@@ -25,62 +27,40 @@ export const AuthProvider = ({ children }: Props) => {
     try {
       console.log("💧 Hydrating user:", id);
 
-      // Sync points first
+      // Check cache first
+      const cached = PointsCache.load(id);
 
-      // Call RPC to sync points. Prefer functions that return the updated
-      // user row (or JSON) — if the RPC returns data, use it directly to
-      // hydrate the user, otherwise fall back to selecting from `users`.
-      const syncRes = await supabase.rpc("sync_points", {
-        p_user_id: id,
-      });
-
-      if (syncRes?.error) {
-        console.error("❌ Sync points error:", syncRes.error);
-      } else {
-        console.log("🔁 sync_points result:", syncRes);
-      }
-
-      // If the RPC returned a payload (e.g. the updated user row or JSON),
-      // use that to hydrate immediately.
-      if (syncRes && syncRes.data) {
-        // rpc may return an array (table) or an object (json); pick the
-        // first element if it's an array.
-        const returned = Array.isArray(syncRes.data)
-          ? syncRes.data[0]
-          : syncRes.data;
-
-        if (returned) {
-          console.log("✅ sync_points returned user:", returned);
-          setUser(returned as User);
-          return true;
-        }
-      }
-
-      // Fallback: Fetch updated user data (use maybeSingle to avoid throwing when no row)
       const { data, error } = await supabase
         .from("users")
         .select("*")
         .eq("id", id)
         .maybeSingle();
 
-      if (error) {
+      if (error || !data) {
         console.error("❌ Fetch user error:", error);
         setUser(null);
+        PointsCache.clear();
         return false;
       }
 
-      if (!data) {
-        console.warn("⚠️ No user row found for id during hydrate:", id);
-        setUser(null);
-        return false;
+      // Use cached points if available, otherwise calculate from DB
+      let currentPoints = data.points;
+      if (cached) {
+        currentPoints = cached.points;
+      } else {
+        const lastUpdate = new Date(data.last_update).getTime();
+        const elapsedSeconds = (Date.now() - lastUpdate) / 1000;
+        currentPoints = data.points + elapsedSeconds * data.points_rate;
+        PointsCache.save(id, currentPoints, data.points_rate);
       }
 
       console.log("✅ User data fetched:", data);
-      setUser(data as User);
+      setUser({ ...data, points: currentPoints } as User);
       return true;
     } catch (error) {
       console.error("Error hydrating user:", error);
       setUser(null);
+      PointsCache.clear();
       return false;
     }
   }, []);
@@ -192,6 +172,7 @@ export const AuthProvider = ({ children }: Props) => {
         } as User;
 
         setUser(quickUser);
+        setLoading(false);
 
         // Background: check twitter connection, ensure DB row exists and hydrate
         (async () => {
@@ -298,6 +279,7 @@ export const AuthProvider = ({ children }: Props) => {
         if (!session) {
           // Signed out or no session
           setUser(null);
+          PointsCache.clear();
           setIsTwitterConnected(false);
           setLoading(false);
           return;
@@ -406,6 +388,7 @@ export const AuthProvider = ({ children }: Props) => {
         } catch (e) {
           console.error("Error in auth handler quick-set:", e);
           setUser(null);
+          PointsCache.clear();
           setLoading(false);
         }
       } catch (err) {
@@ -494,7 +477,9 @@ export const AuthProvider = ({ children }: Props) => {
         },
         (payload) => {
           console.log("📡 Real-time update:", payload.new);
-          setUser(payload.new as User);
+          const updated = payload.new as User;
+          PointsCache.save(user.id, updated.points, updated.points_rate); // ← ADD THIS LINE
+          setUser(updated);
         }
       )
       .subscribe();
@@ -504,24 +489,49 @@ export const AuthProvider = ({ children }: Props) => {
     };
   }, [user]);
 
+  const refresh = useCallback(async () => {
+    if (!user) return;
+
+    const now = Date.now();
+    // Only sync if 10+ seconds have passed
+    if (now - lastSyncRef.current >= 10000) {
+      lastSyncRef.current = now;
+      await supabase.rpc("sync_points", { p_user_id: user.id });
+    }
+
+    await hydrateUser(user.id);
+  }, [user, hydrateUser]);
+
   // Auto-save points every 5 seconds
   useEffect(() => {
     if (!user) return;
 
     const interval = setInterval(async () => {
+      const now = Date.now();
+      // Only sync if 30+ seconds have passed
+      if (now - lastSyncRef.current < 30000) return;
+
       try {
+        lastSyncRef.current = now;
         await supabase.rpc("sync_points", { p_user_id: user.id });
+
+        // Refresh cache after sync
+        const { data } = await supabase
+          .from("users")
+          .select("*")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (data) {
+          PointsCache.save(user.id, data.points, data.points_rate);
+        }
       } catch (error) {
         console.error("❌ Auto-save error:", error);
       }
-    }, 5000);
+    }, 30000); // Changed from 5000 to 30000
 
     return () => clearInterval(interval);
   }, [user]);
-
-  const refresh = useCallback(async () => {
-    if (user) await hydrateUser(user.id);
-  }, [user, hydrateUser]);
 
   return (
     <AuthContext.Provider
