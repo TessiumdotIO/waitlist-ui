@@ -175,7 +175,16 @@ const Hero = () => {
     const loadLeaderboard = async () => {
       const { data } = await supabase
         .from("users")
-        .select("*")
+        .select(`id,
+                email,
+                avatar_url,
+                points,
+                points_rate,
+                referral_code,
+                referral_count,
+                twitter_connected,
+                twitter_username,
+                tasks_completed`)
         .order("points", { ascending: false });
 
       if (data) {
