@@ -28,6 +28,14 @@ const TWITTER_TASKS: TwitterTask[] = [
     reward: 0.2,
   },
   {
+    id: "tenk_main",
+    name: "Like, Comment and RT 10k Users",
+    url: "https://x.com/Tessium_io/status/2015191945786659019?s=20",
+    isShareQuest: false,
+    type: "twitter_interact",
+    reward: 0.3,
+  },
+  {
     id: "comment_main",
     name: "Like, Comment and RT the announcement",
     url: "https://x.com/Tessium_io/status/2014352397569503253",
