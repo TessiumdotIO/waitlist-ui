@@ -48,7 +48,7 @@ const PageContent: React.FC = () => {
         {/* <HowItWorks /> */}
         {/* <WaitlistForm /> */}
       </main>
-      {!user ? <Footer /> : null}
+      <Footer />
     </div>
   );
 };
