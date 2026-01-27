@@ -343,16 +343,16 @@ const Hero = () => {
         <div className="absolute top-1/2 right-1/4 w-72 h-72 rounded-full bg-secondary/10 blur-3xl" />
       </div>
 
-      {loading ? (
-        // Skeleton UI for loading state
+      {/* {loading ? (
+     
         <div className="max-w-7xl mx-auto md:px-7 px-0 w-full md:flex gap-12">
           <div className="md:w-1/2 flex flex-col items-center justify-center mt-28 md:mt-0">
-            {/* Points Skeleton */}
+        
             <SkeletonBox className="h-12 w-64 mb-2" />
             <SkeletonBox className="h-6 w-32 mb-7" />
             <SkeletonBox className="h-16 md:w-96 w-80 mb-7" />
 
-            {/* Invite Friends Card Skeleton */}
+         
             <div className="bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl md:p-6 p-3 shadow-xl w-full max-w-md">
               <SkeletonBox className="h-8 w-48 mb-4" />
               <SkeletonBox className="h-12 w-full mb-4" />
@@ -361,7 +361,7 @@ const Hero = () => {
               </div>
             </div>
 
-            {/* Twitter Connect Skeleton */}
+        
             <SkeletonBox className="w-full max-w-md h-14 mt-7 rounded-xl" />
           </div>
 
@@ -375,7 +375,7 @@ const Hero = () => {
               </button>
             </div>
 
-            {/* Leaderboard Card Skeleton */}
+           
             <div className="bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl md:p-6 p-3 shadow-xl w-full md:h-[500px] h-[300px] mb-7 md:mb-1">
               <div className="flex items-center justify-between mb-4">
                 <SkeletonBox className="h-6 w-32" />
@@ -416,27 +416,27 @@ const Hero = () => {
             </div>
           </div>
         </div>
-      ) : !user ? (
-        <div className="max-w-7xl mx-auto w-full h-[450px] md:h-auto flex flex-col md:block items-center justify-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-          >
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-center">
-              Build Real <span className="text-accent">Users, </span>
-              Not Just Wallets
-            </h1>
-          </motion.div>
-          <Button
-            onClick={() => setShowModal(true)}
-            variant="default"
-            className="px-10 bg-accent flex items-center mx-auto"
-          >
-            Join The Waitlist
-          </Button>
+      ) : !user ? ( */}
+      <div className="max-w-7xl mx-auto w-full h-[450px] md:h-auto flex flex-col md:block items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-center">
+            Build Real <span className="text-accent">Users, </span>
+            Not Just Wallets
+          </h1>
+        </motion.div>
+        <Button
+          onClick={() => setShowModal(true)}
+          variant="default"
+          className="px-10 bg-accent flex items-center mx-auto"
+        >
+          Join The Waitlist
+        </Button>
 
-          {showModal && (
+        {/* {showModal && (
             <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
               <div className="bg-background/80 rounded-3xl p-8 max-w-md w-full relative shadow-2xl">
                 <button
@@ -472,9 +472,9 @@ const Hero = () => {
                 </p>
               </div>
             </div>
-          )}
-        </div>
-      ) : (
+          )} */}
+      </div>
+      {/* ) : (
         <div className="max-w-7xl mx-auto md:px-7 px-0 w-full md:flex gap-12">
           <div className="md:w-1/2 flex flex-col items-center justify-center mt-28 md:mt-0">
             <h1 className="md:text-5xl text-4xl font-bold">
@@ -778,8 +778,8 @@ const Hero = () => {
               </div>
             </div>
           </div>
-        </div>
-      )}
+        </div> */}
+      {/* )} */}
     </section>
   );
 };
